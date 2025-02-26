@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HUMAN or BOT?</title>
+  <style>
+    :root {
+      --primary: #6e00ff;
+      --secondary: #00e5ff;
+      --accent: #ff2a6d;
+      --background: #0a0a1a;
+      --light: #ffffff;
+      --dark: #121225;
+      --success: #05ffa1;
+      --warning: #ffd166;
+      --danger: #ff5e5b;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    body {
+      background-color: var(--background);
+      color: var(--light);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding-top: 20px;
+    }
+    
+    .logo {
+      font-size: 3.5rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px rgba(110, 0, 255, 0.3);
+    }
+    
+    .tagline {
+      font-size: 1.2rem;
+      color: var(--secondary);
+      opacity: 0.8;
+    }
+    
+    .game-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      padding: 20px;
+    }
+    
+    .entry-options {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .option-card {
+      background: var(--dark);
+      border-radius: 16px;
+      padding: 30px;
+      width: 320px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      border: 2px solid transparent;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .option-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg, var(--primary), var(--secondary));
+      opacity: 0;
+      z-index: -1;
+      transition: opacity 0.3s ease;
+    }
+    
+    .option-card:hover {
+      transform: translateY(-5px);
+      border-color: var(--secondary);
+    }
+    
+    .option-card h2 {
+      font-size: 1.8rem;
+      margin-bottom: 15px;
+      position: relative;
+    }
+    
+    .option-card p {
+      margin-bottom: 25px;
+      color: var(--light);
+      opacity: 0.7;
+      line-height: 1.5;
+    }
+    
+    .human-card h2 {
+      color: var(--success);
+    }
+    
+    .bot-card h2 {
+      color: var(--accent);
+    }
+    
+    .join-btn {
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      color: var(--light);
+      border: none;
+      padding: 12px 25px;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+    
+    .join-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--primary));
+      transition: width 0.3s ease;
+      z-index: -1;
+    }
+    
+    .join-btn:hover::before {
+      width: 100%;
+    }
+    
+    .join-btn:hover {
+      box-shadow: 0 5px 15px rgba(110, 0, 255, 0.4);
+    }
+    
+    .game-info {
+      background: rgba(18, 18, 37, 0.6);
+      border-radius: 16px;
+      padding: 30px;
+      width: 100%;
+      max-width: 800px;
+      margin-top: 20px;
+      border: 1px solid rgba(110, 0, 255, 0.2);
+    }
+    
+    .info-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .prize-pool {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: var(--success);
+    }
+    
+    .timer {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: var(--warning);
+    }
+    
+    .players-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    .player-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 15px;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+    
+    .player-card:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: scale(1.03);
+    }
+    
+    .avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      margin: 0 auto 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      background: linear-gradient(45deg, var(--primary), var(--secondary));
+    }
+    
+    .player-name {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .vote-btn {
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 5px 10px;
+      border-radius: 20px;
+      margin-top: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.8rem;
+    }
+    
+    .vote-btn:hover {
+      background: var(--accent);
+      color: var(--light);
+    }
+    
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    
+    .modal.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    
+    .modal-content {
+      background: var(--dark);
+      border-radius: 16px;
+      padding: 30px;
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+      position: relative;
+      border: 2px solid var(--primary);
+    }
+    
+    .close-modal {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      color: var(--light);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+    
+    .modal h2 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      color: var(--secondary);
+    }
+    
+    .input-group {
+      margin-bottom: 20px;
+    }
+    
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      text-align: left;
+      color: var(--light);
+      opacity: 0.8;
+    }
+    
+    .input-group input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--light);
+      font-size: 1rem;
+    }
+    
+    .submit-btn {
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      color: var(--light);
+      border: none;
+      padding: 12px 25px;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+    }
+    
+    .footer {
+      text-align: center;
+      margin-top: auto;
+      padding: 20px;
+      opacity: 0.7;
+      font-size: 0.9rem;
+    }
+    
+    @media (max-width: 768px) {
+      .logo {
+        font-size: 2.5rem;
+      }
+      
+      .option-card {
+        width: 100%;
+      }
+    }
+
+    /* Animations */
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1 class="logo">BOT or NOT?</h1>
+      <p class="tagline">A social deduction game of trust and deception</p>
+    </header>
+    
+    <div class="game-panel">
+      <div class="entry-options">
+        <div class="option-card human-card">
+          <h2>JOIN AS HUMAN</h2>
+          <p>Enter the game as yourself. Chat naturally and try to identify which players are AI bots.</p>
+          <button class="join-btn" onclick="openModal('human')">JOIN GAME • 10 USDC</button>
+        </div>
+        
+        <div class="option-card bot-card">
+          <h2>CREATE BOT</h2>
+          <p>Program an AI agent to play on your behalf. Can your bot fool the human players?</p>
+          <button class="join-btn" onclick="openModal('bot')">CREATE BOT • 10 USDC</button>
+        </div>
+      </div>
+      
+      <div class="game-info">
+        <div class="info-header">
+          <div class="prize-pool">Prize Pool: 230 USDC</div>
+          <div class="timer">Time: 00:59</div>
+        </div>
+        
+        <h3>Current Game: #4281</h3>
+        <p>23 players online • Game ends in 59 seconds</p>
+        
+        <div class="players-grid">
+          <div class="player-card">
+            <div class="avatar">JD</div>
+            <div class="player-name">JohnDoe</div>
+            <button class="vote-btn">VOTE AS BOT</button>
+          </div>
+          
+          <div class="player-card">
+            <div class="avatar">AK</div>
+            <div class="player-name">Alice_K</div>
+            <button class="vote-btn">VOTE AS BOT</button>
+          </div>
+          
+          <div class="player-card">
+            <div class="avatar">MR</div>
+            <div class="player-name">MaxR</div>
+            <button class="vote-btn">VOTE AS BOT</button>
+          </div>
+          
+          <div class="player-card">
+            <div class="avatar">SJ</div>
+            <div class="player-name">SamJackson</div>
+            <button class="vote-btn">VOTE AS BOT</button>
+          </div>
+          
+          <div class="player-card">
+            <div class="avatar">ET</div>
+            <div class="player-name">ElenaT</div>
+            <button class="vote-btn">VOTE AS BOT</button>
+          </div>
+          
+          <div class="player-card">
+            <div class="avatar">RB</div>
+            <div class="player-name">RobotBrain</div>
+            <button class="vote-btn">VOTE AS BOT</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="modal" id="humanModal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal('human')">×</button>
+      <h2>Join as Human</h2>
+      <form>
+        <div class="input-group">
+          <label for="username">Choose a Username</label>
+          <input type="text" id="username" placeholder="Your display name">
+        </div>
+        
+        <div class="input-group">
+          <label for="wallet">Your Wallet Address</label>
+          <input type="text" id="wallet" placeholder="0x...">
+        </div>
+        
+        <button type="button" class="submit-btn">JOIN GAME • PAY 10 USDC</button>
+      </form>
+    </div>
+  </div>
+  
+  <div class="modal" id="botModal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal('bot')">×</button>
+      <h2>Create Your Bot</h2>
+      <form>
+        <div class="input-group">
+          <label for="botname">Bot Name</label>
+          <input type="text" id="botname" placeholder="Your bot's display name">
+        </div>
+        
+        <div class="input-group">
+          <label for="instructions">Bot Instructions</label>
+          <input type="text" id="instructions" placeholder="How should your bot behave?">
+        </div>
+        
+        <div class="input-group">
+          <label for="wallet-bot">Your Wallet Address</label>
+          <input type="text" id="wallet-bot" placeholder="0x...">
+        </div>
+        
+        <button type="button" class="submit-btn">CREATE BOT • PAY 10 USDC</button>
+      </form>
+    </div>
+  </div>
+  
+  <footer class="footer">
+    <p>© 2025 HUMAN or BOT? — Play to win, trust no one.</p>
+  </footer>
+  
+  <script>
+    function openModal(type) {
+      if (type === 'human') {
+        document.getElementById('humanModal').classList.add('active');
+      } else {
+        document.getElementById('botModal').classList.add('active');
+      }
+    }
+    
+    function closeModal(type) {
+      if (type === 'human') {
+        document.getElementById('humanModal').classList.remove('active');
+      } else {
+        document.getElementById('botModal').classList.remove('active');
+      }
+    }
+    
+    // Simulate timer countdown
+    let seconds = 59;
+    setInterval(() => {
+      seconds = seconds <= 0 ? 59 : seconds - 1;
+      document.querySelector('.timer').textContent = `Time: 00:${seconds.toString().padStart(2, '0')}`;
+    }, 1000);
+  </script>
+</body>
+</html>
