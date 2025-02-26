@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HUMAN or BOT?</title>
+  <title>BOT or NOT?</title>
   <style>
     :root {
       --primary: #6e00ff;
@@ -60,20 +60,23 @@
       color: var(--secondary);
       opacity: 0.8;
     }
-    
-    .game-panel {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 30px;
-      padding: 20px;
+
+    /* Views/Screens */
+    .view {
+      display: none;
     }
     
+    .view.active {
+      display: block;
+    }
+    
+    /* Join Game View */
     .entry-options {
       display: flex;
       gap: 30px;
       flex-wrap: wrap;
       justify-content: center;
+      margin-bottom: 30px;
     }
     
     .option-card {
@@ -128,7 +131,7 @@
       color: var(--accent);
     }
     
-    .join-btn {
+    .btn {
       background: linear-gradient(90deg, var(--primary), var(--secondary));
       color: var(--light);
       border: none;
@@ -143,7 +146,7 @@
       z-index: 1;
     }
     
-    .join-btn::before {
+    .btn::before {
       content: '';
       position: absolute;
       top: 0;
@@ -155,21 +158,22 @@
       z-index: -1;
     }
     
-    .join-btn:hover::before {
+    .btn:hover::before {
       width: 100%;
     }
     
-    .join-btn:hover {
+    .btn:hover {
       box-shadow: 0 5px 15px rgba(110, 0, 255, 0.4);
     }
     
+    /* Game Info Panel */
     .game-info {
       background: rgba(18, 18, 37, 0.6);
       border-radius: 16px;
       padding: 30px;
       width: 100%;
       max-width: 800px;
-      margin-top: 20px;
+      margin: 20px auto;
       border: 1px solid rgba(110, 0, 255, 0.2);
     }
     
@@ -192,6 +196,14 @@
       font-size: 1.8rem;
       font-weight: bold;
       color: var(--warning);
+    }
+    
+    /* Waiting Room */
+    .waiting-status {
+      text-align: center;
+      margin: 20px 0;
+      font-size: 1.5rem;
+      color: var(--secondary);
     }
     
     .players-grid {
@@ -244,11 +256,187 @@
       font-size: 0.8rem;
     }
     
-    .vote-btn:hover {
+    .vote-btn:hover, .vote-btn.selected {
       background: var(--accent);
       color: var(--light);
     }
     
+    /* Chat Room */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 500px;
+      background: rgba(18, 18, 37, 0.6);
+      border-radius: 16px;
+      padding: 20px;
+      width: 100%;
+      max-width: 800px;
+      margin: 20px auto;
+      border: 1px solid rgba(110, 0, 255, 0.2);
+    }
+    
+    .chat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .chat-messages {
+      flex-grow: 1;
+      overflow-y: auto;
+      margin-bottom: 15px;
+      padding: 10px;
+    }
+    
+    .message {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: flex-start;
+    }
+    
+    .message-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-right: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+    
+    .message-content {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 10px 15px;
+      border-radius: 18px;
+      max-width: 80%;
+    }
+    
+    .message-sender {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .message-text {
+      line-height: 1.4;
+    }
+    
+    .chat-input {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .chat-input input {
+      flex-grow: 1;
+      padding: 12px;
+      border-radius: 30px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--light);
+      font-size: 1rem;
+    }
+    
+    .send-btn {
+      background: var(--primary);
+      color: var(--light);
+      border: none;
+      padding: 0 20px;
+      border-radius: 30px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    /* Voting Screen */
+    .voting-container {
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .voting-title {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      color: var(--accent);
+    }
+    
+    .voting-subtitle {
+      font-size: 1.2rem;
+      margin-bottom: 30px;
+      color: var(--light);
+      opacity: 0.8;
+    }
+    
+    /* Results Screen */
+    .results-container {
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .results-title {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      color: var(--secondary);
+    }
+    
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+    
+    .result-card {
+      background: rgba(18, 18, 37, 0.8);
+      border-radius: 16px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .result-card.bot {
+      border: 2px solid var(--accent);
+    }
+    
+    .result-card.human {
+      border: 2px solid var(--success);
+    }
+    
+    .result-label {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+    
+    .result-label.bot {
+      background: var(--accent);
+      color: var(--light);
+    }
+    
+    .result-label.human {
+      background: var(--success);
+      color: var(--dark);
+    }
+    
+    .votes-count {
+      margin-top: 15px;
+      font-size: 1.2rem;
+    }
+    
+    .play-again-btn {
+      margin-top: 30px;
+    }
+    
+    /* Modal */
     .modal {
       position: fixed;
       top: 0;
@@ -341,16 +529,6 @@
       font-size: 0.9rem;
     }
     
-    @media (max-width: 768px) {
-      .logo {
-        font-size: 2.5rem;
-      }
-      
-      .option-card {
-        width: 100%;
-      }
-    }
-
     /* Animations */
     @keyframes pulse {
       0% { transform: scale(1); }
@@ -361,85 +539,192 @@
     .pulse {
       animation: pulse 2s infinite;
     }
+
+    /* Progress bar */
+    .progress-container {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 30px;
+      height: 10px;
+      width: 100%;
+      margin: 20px 0;
+      overflow: hidden;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      border-radius: 30px;
+      transition: width 0.5s ease;
+    }
+    
+    @media (max-width: 768px) {
+      .logo {
+        font-size: 2.5rem;
+      }
+      
+      .option-card {
+        width: 100%;
+      }
+      
+      .chat-container {
+        height: 400px;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1 class="logo">BOT or NOT?</h1>
+      <h1 class="logo">HUMAN or BOT?</h1>
       <p class="tagline">A social deduction game of trust and deception</p>
     </header>
     
-    <div class="game-panel">
+    <!-- JOIN GAME VIEW -->
+    <div id="joinView" class="view active">
       <div class="entry-options">
         <div class="option-card human-card">
           <h2>JOIN AS HUMAN</h2>
           <p>Enter the game as yourself. Chat naturally and try to identify which players are AI bots.</p>
-          <button class="join-btn" onclick="openModal('human')">JOIN GAME • 10 USDC</button>
+          <button class="btn" onclick="openModal('human')">JOIN GAME • 10 USDC</button>
         </div>
         
         <div class="option-card bot-card">
           <h2>CREATE BOT</h2>
           <p>Program an AI agent to play on your behalf. Can your bot fool the human players?</p>
-          <button class="join-btn" onclick="openModal('bot')">CREATE BOT • 10 USDC</button>
+          <button class="btn" onclick="openModal('bot')">CREATE BOT • 10 USDC</button>
         </div>
       </div>
       
       <div class="game-info">
         <div class="info-header">
           <div class="prize-pool">Prize Pool: 230 USDC</div>
-          <div class="timer">Time: 00:59</div>
+          <div class="timer">Next Game: 03:42</div>
         </div>
         
-        <h3>Current Game: #4281</h3>
-        <p>23 players online • Game ends in 59 seconds</p>
+        <h3>Upcoming Game: #4281</h3>
+        <p>23 players waiting • Join now to secure your spot</p>
         
         <div class="players-grid">
           <div class="player-card">
             <div class="avatar">JD</div>
             <div class="player-name">JohnDoe</div>
-            <button class="vote-btn">VOTE AS BOT</button>
           </div>
           
           <div class="player-card">
             <div class="avatar">AK</div>
             <div class="player-name">Alice_K</div>
-            <button class="vote-btn">VOTE AS BOT</button>
           </div>
           
           <div class="player-card">
             <div class="avatar">MR</div>
             <div class="player-name">MaxR</div>
-            <button class="vote-btn">VOTE AS BOT</button>
           </div>
           
           <div class="player-card">
             <div class="avatar">SJ</div>
             <div class="player-name">SamJackson</div>
-            <button class="vote-btn">VOTE AS BOT</button>
           </div>
           
           <div class="player-card">
             <div class="avatar">ET</div>
             <div class="player-name">ElenaT</div>
-            <button class="vote-btn">VOTE AS BOT</button>
           </div>
           
           <div class="player-card">
             <div class="avatar">RB</div>
             <div class="player-name">RobotBrain</div>
-            <button class="vote-btn">VOTE AS BOT</button>
           </div>
         </div>
       </div>
     </div>
+    
+    <!-- WAITING ROOM VIEW -->
+    <div id="waitingView" class="view">
+      <div class="game-info">
+        <div class="info-header">
+          <div class="prize-pool">Prize Pool: 230 USDC</div>
+          <div class="timer" id="waitingTimer">Starting in: 01:00</div>
+        </div>
+        
+        <h3>Game #4281 Waiting Room</h3>
+        <p class="waiting-status">Waiting for game to start...</p>
+        
+        <div class="progress-container">
+          <div class="progress-bar" id="waitingProgress" style="width: 0%"></div>
+        </div>
+        
+        <p>24 players in lobby</p>
+        
+        <div class="players-grid" id="waitingPlayers">
+          <!-- Player cards will be added dynamically -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- CHAT ROOM VIEW -->
+    <div id="chatView" class="view">
+      <div class="chat-container">
+        <div class="chat-header">
+          <h3>Game #4281 Chat Room</h3>
+          <div class="timer" id="chatTimer">Time left: 01:00</div>
+        </div>
+        
+        <div class="progress-container">
+          <div class="progress-bar" id="chatProgress" style="width: 100%"></div>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+          <!-- Messages will be added dynamically -->
+        </div>
+        
+        <div class="chat-input">
+          <input type="text" id="messageInput" placeholder="Type your message here..." />
+          <button class="send-btn" onclick="sendMessage()">Send</button>
+        </div>
+      </div>
+      
+      <p class="waiting-status">Chat with other players! Can you identify who's human and who's a bot?</p>
+    </div>
+    
+    <!-- VOTING VIEW -->
+    <div id="votingView" class="view">
+      <div class="voting-container">
+        <h2 class="voting-title">Time to Vote!</h2>
+        <p class="voting-subtitle">Select the player you think is an AI bot</p>
+        
+        <div class="timer" id="votingTimer">Time left: 00:10</div>
+        
+        <div class="progress-container">
+          <div class="progress-bar" id="votingProgress" style="width: 100%"></div>
+        </div>
+        
+        <div class="players-grid" id="votingPlayers">
+          <!-- Player cards with voting buttons will be added dynamically -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- RESULTS VIEW -->
+    <div id="resultsView" class="view">
+      <div class="results-container">
+        <h2 class="results-title">Game Results</h2>
+        <p class="voting-subtitle">Let's see who was right!</p>
+        
+        <div class="results-grid" id="resultsGrid">
+          <!-- Results will be added dynamically -->
+        </div>
+        
+        <button class="btn play-again-btn" onclick="resetGame()">Play Again</button>
+      </div>
+    </div>
   </div>
   
+  <!-- MODALS -->
   <div class="modal" id="humanModal">
     <div class="modal-content">
       <button class="close-modal" onclick="closeModal('human')">×</button>
       <h2>Join as Human</h2>
-      <form>
+      <form id="humanForm">
         <div class="input-group">
           <label for="username">Choose a Username</label>
           <input type="text" id="username" placeholder="Your display name">
@@ -447,10 +732,10 @@
         
         <div class="input-group">
           <label for="wallet">Your Wallet Address</label>
-          <input type="text" id="wallet" placeholder="0x...">
+          <input type="text" id="wallet" placeholder="0x..." value="0x742d35Cc6634C0532925a3b844Bc454e4438f44e">
         </div>
         
-        <button type="button" class="submit-btn">JOIN GAME • PAY 10 USDC</button>
+        <button type="button" class="submit-btn" onclick="joinGame('human')">JOIN GAME • PAY 10 USDC</button>
       </form>
     </div>
   </div>
@@ -459,7 +744,7 @@
     <div class="modal-content">
       <button class="close-modal" onclick="closeModal('bot')">×</button>
       <h2>Create Your Bot</h2>
-      <form>
+      <form id="botForm">
         <div class="input-group">
           <label for="botname">Bot Name</label>
           <input type="text" id="botname" placeholder="Your bot's display name">
@@ -471,11 +756,11 @@
         </div>
         
         <div class="input-group">
-          <label for="wallet-bot">Your Wallet Address</label>
-          <input type="text" id="wallet-bot" placeholder="0x...">
+          <label for="walletBot">Your Wallet Address</label>
+          <input type="text" id="walletBot" placeholder="0x..." value="0x742d35Cc6634C0532925a3b844Bc454e4438f44e">
         </div>
         
-        <button type="button" class="submit-btn">CREATE BOT • PAY 10 USDC</button>
+        <button type="button" class="submit-btn" onclick="joinGame('bot')">CREATE BOT • PAY 10 USDC</button>
       </form>
     </div>
   </div>
@@ -485,6 +770,56 @@
   </footer>
   
   <script>
+    // Game State
+    const gameState = {
+      currentView: 'joinView',
+      players: [
+        { id: 1, name: 'JohnDoe', initials: 'JD', isBot: false, votes: 0 },
+        { id: 2, name: 'Alice_K', initials: 'AK', isBot: false, votes: 0 },
+        { id: 3, name: 'MaxR', initials: 'MR', isBot: false, votes: 0 },
+        { id: 4, name: 'SamJackson', initials: 'SJ', isBot: true, votes: 0 },  // This is our bot
+        { id: 5, name: 'ElenaT', initials: 'ET', isBot: false, votes: 0 },
+        { id: 6, name: 'RobotBrain', initials: 'RB', isBot: false, votes: 0 }
+      ],
+      currentPlayer: null,
+      selectedVote: null,
+      botMessages: [
+        "Hello everyone! Excited to play this game with you all.",
+        "I've been playing games like this for years, they're always fun.",
+        "Has anyone here tried the beta version? This is my first time.",
+        "What's your strategy for identifying bots? I usually look for patterns in responses.",
+        "I think we should all share something personal to prove we're human. I'll start: I have a cat named Pixel.",
+        "The interface is really well designed. I like the color scheme.",
+        "Anyone else from the East Coast? It's getting late here!",
+        "I think one telltale sign of bots is that they respond too quickly sometimes."
+      ],
+      humanMessages: [
+        "Hey all! Let's see if we can spot the bot!",
+        "I'm terrible at these games but they're so addictive",
+        "The prize pool looks nice today!",
+        "Does anyone have tips for spotting bots?",
+        "I think that's a bot right there...",
+        "How many people are playing today?",
+        "LOL this is harder than I thought",
+        "I'm 99% sure I know who it is!"
+      ]
+    };
+    
+    let waitingInterval, chatInterval, votingInterval;
+    
+    // View Management
+    function showView(viewId) {
+      // Hide all views
+      document.querySelectorAll('.view').forEach(view => {
+        view.classList.remove('active');
+      });
+      
+      // Show the requested view
+      document.getElementById(viewId).classList.add('active');
+      gameState.currentView = viewId;
+    }
+    
+    // Modal Management
     function openModal(type) {
       if (type === 'human') {
         document.getElementById('humanModal').classList.add('active');
@@ -501,12 +836,384 @@
       }
     }
     
-    // Simulate timer countdown
-    let seconds = 59;
-    setInterval(() => {
-      seconds = seconds <= 0 ? 59 : seconds - 1;
-      document.querySelector('.timer').textContent = `Time: 00:${seconds.toString().padStart(2, '0')}`;
-    }, 1000);
+    // Game Flow Functions
+    function joinGame(type) {
+      let username;
+      let isBot = false;
+      
+      if (type === 'human') {
+        username = document.getElementById('username').value || 'Player' + Math.floor(Math.random() * 1000);
+        closeModal('human');
+      } else {
+        username = document.getElementById('botname').value || 'Bot' + Math.floor(Math.random() * 1000);
+        isBot = true;
+        closeModal('bot');
+      }
+      
+      // Create player
+      const initials = username.substring(0, 2).toUpperCase();
+      gameState.currentPlayer = {
+        id: gameState.players.length + 1,
+        name: username,
+        initials: initials,
+        isBot: isBot,
+        votes: 0
+      };
+      
+      // Add player to game
+      gameState.players.push(gameState.currentPlayer);
+      
+      // Go to waiting room
+      startWaitingRoom();
+    }
+    
+    function startWaitingRoom() {
+      showView('waitingView');
+      populateWaitingRoom();
+      
+      // Set up countdown
+      let seconds = 30;
+      const waitingTimer = document.getElementById('waitingTimer');
+      const waitingProgress = document.getElementById('waitingProgress');
+      
+      waitingInterval = setInterval(() => {
+        seconds--;
+        const displayMinutes = Math.floor(seconds / 60);
+        const displaySeconds = seconds % 60;
+        
+        waitingTimer.textContent = `Starting in: ${String(displayMinutes).padStart(2, '0')}:${String(displaySeconds).padStart(2, '0')}`;
+        
+        // Update progress bar
+        const progressPercent = 100 - ((seconds / 60) * 100);
+        waitingProgress.style.width = `${progressPercent}%`;
+        
+        if (seconds <= 0) {
+          clearInterval(waitingInterval);
+          startChatRoom();
+        }
+      }, 1000);
+    }
+    
+    function populateWaitingRoom() {
+      const waitingPlayers = document.getElementById('waitingPlayers');
+      waitingPlayers.innerHTML = '';
+      
+      gameState.players.forEach(player => {
+        const playerCard = document.createElement('div');
+        playerCard.classList.add('player-card');
+        
+        playerCard.innerHTML = `
+          <div class="avatar" style="background: ${player.id === gameState.currentPlayer?.id ? 'linear-gradient(45deg, var(--accent), var(--primary))' : 'linear-gradient(45deg, var(--primary), var(--secondary))'}">${player.initials}</div>
+          <div class="player-name">${player.name}${player.id === gameState.currentPlayer?.id ? ' (You)' : ''}</div>
+        `;
+        
+        waitingPlayers.appendChild(playerCard);
+      });
+    }
+    
+    function startChatRoom() {
+      showView('chatView');
+      initializeChat();
+      
+      // Set up countdown
+      let seconds = 60;
+      const chatTimer = document.getElementById('chatTimer');
+      const chatProgress = document.getElementById('chatProgress');
+      
+      chatInterval = setInterval(() => {
+        seconds--;
+        chatTimer.textContent = `Time left: ${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+        
+        // Update progress bar
+        const progressPercent = (seconds / 60) * 100;
+        chatProgress.style.width = `${progressPercent}%`;
+        
+        // Add AI messages periodically
+        if (seconds % 8 === 0) {
+          addBotMessage();
+        }
+        
+        if (seconds <= 0) {
+          clearInterval(chatInterval);
+          startVoting();
+        }
+      }, 1000);
+    }
+    
+    function initializeChat() {
+      const chatMessages = document.getElementById('chatMessages');
+      chatMessages.innerHTML = '';
+      
+      // Add welcome message
+      const welcomeMessage = document.createElement('div');
+      welcomeMessage.classList.add('message');
+      welcomeMessage.innerHTML = `
+        <div class="message-avatar" style="background: linear-gradient(45deg, var(--accent), var(--primary))">SYS</div>
+        <div class="message-content">
+          <div class="message-sender">System</div>
+          <div class="message-text">Welcome to Game #4281! Chat with other players for 1 minute. One of you is an AI bot - can you figure out who?</div>
+        </div>
+      `;
+      
+      chatMessages.appendChild(welcomeMessage);
+      
+      // Add initial messages
+      setTimeout(() => {
+        addBotMessage();
+      }, 2000);
+      
+      setTimeout(() => {
+        addRandomHumanMessage();
+      }, 5000);
+    }
+    
+    function addBotMessage() {
+      const botPlayer = gameState.players.find(p => p.isBot && p.id !== gameState.currentPlayer?.id);
+      if (!botPlayer) return;
+      
+      const randomMessage = gameState.botMessages[Math.floor(Math.random() * gameState.botMessages.length)];
+      addMessage(botPlayer, randomMessage);
+    }
+    
+    function addRandomHumanMessage() {
+      const humanPlayers = gameState.players.filter(p => !p.isBot && p.id !== gameState.currentPlayer?.id);
+      if (humanPlayers.length === 0) return;
+      
+      const randomPlayer = humanPlayers[Math.floor(Math.random() * humanPlayers.length)];
+      const randomMessage = gameState.humanMessages[Math.floor(Math.random() * gameState.humanMessages.length)];
+      
+      addMessage(randomPlayer, randomMessage);
+    }
+    
+    function addMessage(player, text) {
+      const chatMessages = document.getElementById('chatMessages');
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message');
+      
+      messageElement.innerHTML = `
+        <div class="message-avatar" style="background: ${player.id === gameState.currentPlayer?.id ? 'linear-gradient(45deg, var(--accent), var(--primary))' : 'linear-gradient(45deg, var(--primary), var(--secondary))'}">${player.initials}</div>
+        <div class="message-content">
+          <div class="message-sender">${player.name}${player.id === gameState.currentPlayer?.id ? ' (You)' : ''}</div>
+          <div class="message-text">${text}</div>
+        </div>
+      `;
+      
+      chatMessages.appendChild(messageElement);
+      
+      // Scroll to bottom
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    function sendMessage() {
+      const messageInput = document.getElementById('messageInput');
+      const message = messageInput.value.trim();
+      
+      if (message) {
+        addMessage(gameState.currentPlayer, message);
+        messageInput.value = '';
+        
+        // Trigger a random response sometimes
+        if (Math.random() > 0.5) {
+          setTimeout(() => {
+            if (Math.random() > 0.5) {
+              addBotMessage();
+            } else {
+              addRandomHumanMessage();
+            }
+          }, 1000 + Math.random() * 2000);
+        }
+      }
+    }
+    
+    // Add event listener to input for Enter key
+    document.getElementById('messageInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+    
+    function startVoting() {
+      showView('votingView');
+      populateVotingPlayers();
+      
+      // Set up countdown
+      let seconds = 10;
+      const votingTimer = document.getElementById('votingTimer');
+      const votingProgress = document.getElementById('votingProgress');
+      
+      votingInterval = setInterval(() => {
+        seconds--;
+        votingTimer.textContent = `Time left: 00:${String(seconds).padStart(2, '0')}`;
+        
+        // Update progress bar
+        const progressPercent = (seconds / 10) * 100;
+        votingProgress.style.width = `${progressPercent}%`;
+        
+        if (seconds <= 0) {
+          clearInterval(votingInterval);
+          showResults();
+        }
+      }, 1000);
+    }
+    
+    function populateVotingPlayers() {
+      const votingPlayers = document.getElementById('votingPlayers');
+      votingPlayers.innerHTML = '';
+      
+      gameState.players.forEach(player => {
+        // Don't let players vote for themselves
+        if (player.id === gameState.currentPlayer?.id) return;
+        
+        const playerCard = document.createElement('div');
+        playerCard.classList.add('player-card');
+        
+        playerCard.innerHTML = `
+          <div class="avatar">${player.initials}</div>
+          <div class="player-name">${player.name}</div>
+          <button class="vote-btn" onclick="voteForPlayer(${player.id})">VOTE AS BOT</button>
+        `;
+        
+        votingPlayers.appendChild(playerCard);
+      });
+    }
+    
+    function voteForPlayer(playerId) {
+      // Clear previous selection
+      document.querySelectorAll('.vote-btn').forEach(btn => {
+        btn.classList.remove('selected');
+      });
+      
+      // Select new button
+      const buttons = document.querySelectorAll('.vote-btn');
+      for (let i = 0; i < buttons.length; i++) {
+        if (buttons[i].onclick.toString().includes(`voteForPlayer(${playerId})`)) {
+          buttons[i].classList.add('selected');
+          break;
+        }
+      }
+      
+      // Update game state
+      gameState.selectedVote = playerId;
+      
+      // Add vote to player
+      const player = gameState.players.find(p => p.id === playerId);
+      if (player) {
+        player.votes++;
+      }
+    }
+    
+    function showResults() {
+      showView('resultsView');
+      
+      // Simulate other player votes
+      simulateVotes();
+      
+      // Display results
+      displayResults();
+    }
+    
+    function simulateVotes() {
+      // Clear previous votes except the player's vote
+      gameState.players.forEach(player => {
+        if (player.id !== gameState.selectedVote) {
+          player.votes = 0;
+        }
+      });
+      
+      // Each AI player votes randomly, but with higher chance to vote for humans
+      gameState.players.forEach(voter => {
+        // Skip the current player since they already voted
+        if (voter.id === gameState.currentPlayer?.id) return;
+        
+        const candidates = gameState.players.filter(p => p.id !== voter.id);
+        let votedPlayer;
+        
+        if (Math.random() < 0.6) {
+          // Try to vote for a human player (simulating some intelligence)
+          const humanCandidates = candidates.filter(p => !p.isBot);
+          if (humanCandidates.length > 0) {
+            votedPlayer = humanCandidates[Math.floor(Math.random() * humanCandidates.length)];
+          }
+        }
+        
+        // If no vote yet, vote randomly
+        if (!votedPlayer) {
+          votedPlayer = candidates[Math.floor(Math.random() * candidates.length)];
+        }
+        
+        votedPlayer.votes++;
+      });
+    }
+    
+    function displayResults() {
+      const resultsGrid = document.getElementById('resultsGrid');
+      resultsGrid.innerHTML = '';
+      
+      // Find player with most votes (the "winner")
+      const sortedPlayers = [...gameState.players].sort((a, b) => b.votes - a.votes);
+      const winner = sortedPlayers[0];
+      
+      // Check if the real bot was identified
+      const realBot = gameState.players.find(p => p.isBot && p.id !== gameState.currentPlayer?.id);
+      const botWasFound = realBot && winner.id === realBot.id;
+      
+      // Create results cards
+      gameState.players.forEach(player => {
+        const resultCard = document.createElement('div');
+        resultCard.classList.add('result-card');
+        resultCard.classList.add(player.isBot ? 'bot' : 'human');
+        
+        resultCard.innerHTML = `
+          <div class="avatar">${player.initials}</div>
+          <div class="player-name">${player.name}${player.id === gameState.currentPlayer?.id ? ' (You)' : ''}</div>
+          <div class="result-label ${player.isBot ? 'bot' : 'human'}">${player.isBot ? 'BOT' : 'HUMAN'}</div>
+          <div class="votes-count">${player.votes} vote${player.votes !== 1 ? 's' : ''}</div>
+        `;
+        
+        resultsGrid.appendChild(resultCard);
+      });
+      
+      // Show game outcome at the top
+      const resultsTitle = document.querySelector('.results-title');
+      const resultsSubtitle = document.querySelector('.voting-subtitle');
+      
+      if (botWasFound) {
+        resultsTitle.textContent = "The Bot Was Found!";
+        resultsSubtitle.textContent = `${realBot.name} received the most votes. Humans win!`;
+      } else {
+        resultsTitle.textContent = "The Bot Got Away!";
+        resultsSubtitle.textContent = `${winner.name} was voted as the bot, but the real bot was ${realBot.name}. Bot wins!`;
+      }
+    }
+    
+    function resetGame() {
+      // Clear all intervals
+      clearInterval(waitingInterval);
+      clearInterval(chatInterval);
+      clearInterval(votingInterval);
+      
+      // Reset game state
+      gameState.players.forEach(player => {
+        player.votes = 0;
+      });
+      gameState.selectedVote = null;
+      
+      // Return to join view
+      showView('joinView');
+    }
+    
+    // Event listeners for enter key on input fields
+    document.getElementById('username').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        joinGame('human');
+      }
+    });
+    
+    document.getElementById('botname').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        joinGame('bot');
+      }
+    });
   </script>
 </body>
 </html>
