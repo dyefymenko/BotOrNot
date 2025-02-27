@@ -1,140 +1,83 @@
 import asyncio
 import websockets
 import json
-import time
 import random
-import os
-from dotenv import load_dotenv
-from openai import OpenAI
-
-# Load environment variables from .env file
-load_dotenv()
-
-# Initialize OpenAI client - Fixed initialization
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    print("Warning: OPENAI_API_KEY environment variable not set")
-    
-client = OpenAI(api_key=api_key)
+import time
+from typing import Dict, List, Any, Set
 
 # Game state
 game_state = {
-    "players": [],
-    "gameInProgress": False,
-    "nextGameTime": time.time() * 1000 + 20000, 
-    "currentGameId": "4281",
-    "messages": []
+    'players': [],
+    'gameInProgress': False,
+    'nextGameTime': int(time.time() * 1000) + 20000,
+    'currentGameId': "4281",
+    'messages': []
 }
 
 # Connected clients
-clients = set()
+clients: Set[websockets.WebSocketServerProtocol] = set()
 
-# Debug function to print game state
 def print_game_state():
+    """Debug function to print game state"""
     print("\n===== GAME STATE =====")
     print(f"Total players: {len(game_state['players'])}")
-    print(f"Players: {', '.join([p['name'] for p in game_state['players']])}")
+    print(f"Players: {', '.join(p['name'] for p in game_state['players'])}")
     print(f"Game in progress: {game_state['gameInProgress']}")
     print(f"Next game time: {time.strftime('%H:%M:%S', time.localtime(game_state['nextGameTime']/1000))}")
     print(f"Game ID: {game_state['currentGameId']}")
     print("=====================\n")
 
-# Generate AI bot response using OpenAI
-async def generate_bot_response(bot_player, messages_history):
-    try:
-        # Create a prompt with conversation history
-        prompt = f"You are {bot_player['name']}, an AI trying to pass as human in a chat game. "
-        prompt += "Keep your responses casual, conversational, and don't use overly perfect grammar or punctuation. "
-        prompt += "Don't act suspiciously nice or helpful. Include occasional typos or slang. Be concise (under 30 words).\n\n"
-        
-        # Add custom bot instructions if available
-        if 'instructions' in bot_player and bot_player['instructions']:
-            prompt += f"Additional instructions: {bot_player['instructions']}\n\n"
-            
-        prompt += "Previous messages:\n"
-        
-        # Add the last few messages for context
-        for msg in messages_history[-5:]:
-            sender_name = msg.get('senderName', 'Unknown')
-            text = msg.get('text', '')
-            prompt += f"{sender_name}: {text}\n"
-            
-        prompt += f"\nRespond as {bot_player['name']}:"
-        
-        # Call OpenAI API
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=60,
-            temperature=0.7,
-        )
-        
-        # Extract and return the response text
-        return response.choices[0].message.content.strip()
-        
-    except Exception as e:
-        print(f"Error generating bot response: {e}")
-        # Fallback responses if API call fails
-        fallbacks = [
-            "Interesting point!",
-            "I'm not sure about that.",
-            "What do others think?",
-            "Let me think about that...",
-            "Has anyone figured out who the bot might be?",
-        ]
-        return random.choice(fallbacks)
-
-# Broadcast a message to all connected clients
-async def broadcast(message):
+async def broadcast(message: Dict[str, Any]):
+    """Broadcast a message to all connected clients"""
+    if not clients:
+        return
+    
     message_str = json.dumps(message)
-    dead_clients = []
     
-    print(f"Broadcasting {message['type']} to {len(clients)} clients")
+    print(f"Broadcasting {message.get('type')} to {len(clients)} clients")
     
-    if message['type'] == 'playersUpdate' or message['type'] == 'gameState':
-        players_count = len(message.get('players', message.get('data', {}).get('players', [])))
-        print(f"Message includes {players_count} players")
+    if message.get('type') in ['playersUpdate', 'gameState']:
+        print(f"Message includes {len(message.get('players', message.get('data', {}).get('players', []))) or 0} players")
     
-    for client in clients:
+    dead_clients = set()
+    for client in clients.copy():
         try:
             await client.send(message_str)
-        except websockets.exceptions.ConnectionClosed:
-            dead_clients.append(client)
-        except Exception as e:
-            print(f"Error sending to client: {e}")
-            dead_clients.append(client)
+        except (websockets.ConnectionClosed, Exception):
+            dead_clients.add(client)
     
-    # Clean up dead clients
-    for client in dead_clients:
-        clients.discard(client)
+    # Remove dead clients
+    clients.difference_update(dead_clients)
     
     if dead_clients:
         print(f"Removed {len(dead_clients)} dead clients. Total clients: {len(clients)}")
 
-# Handle client connection
-async def handle_client(websocket, path):
-    # Add client to set of connected clients
-    clients.add(websocket)
-    client_id = ''.join(random.choices('0123456789abcdefghijklmnopqrstuvwxyz', k=8))
-    print(f"Client {client_id} connected. Total clients: {len(clients)}")
-    
-    # Send initial state immediately on connection
-    await websocket.send(json.dumps({
-        "type": "gameState",
-        "data": game_state
-    }))
-    
-    print(f"Sent initial game state to client {client_id} with {len(game_state['players'])} players")
+async def handle_connection(websocket: websockets.WebSocketServerProtocol, path: str):
+    """Handle a new WebSocket connection"""
+    # Generate a random client ID
+    client_id = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=8))
     
     try:
-        # Handle messages from this client
+        # Add client to set of connected clients
+        clients.add(websocket)
+        print(f"Client {client_id} connected. Total clients: {len(clients)}")
+        
+        # Send initial state immediately on connection
+        await websocket.send(json.dumps({
+            'type': 'gameState',
+            'data': game_state
+        }))
+        
+        print(f"Sent initial game state to client {client_id} with {len(game_state['players'])} players")
+        
+        # Handle incoming messages
         async for message in websocket:
             try:
                 data = json.loads(message)
-                print(f"Received from client {client_id}: {data['type']}")
+                print(f"Received from client {client_id}: {data.get('type')}")
                 
-                # Handle different message types
-                if data['type'] == "joinGame" and 'player' in data:
+                # Handle join game
+                if data.get('type') == 'joinGame' and data.get('player'):
                     print(f"Player joining: {data['player']['name']} (ID: {data['player']['id']})")
                     
                     # Add player to game state if not already present
@@ -142,40 +85,39 @@ async def handle_client(websocket, path):
                     if not player_exists:
                         game_state['players'].append(data['player'])
                         print(f"Added player to game state. Total players: {len(game_state['players'])}")
-                        print(f"Current players: {', '.join([p['name'] for p in game_state['players']])}")
+                        print(f"Current players: {', '.join(p['name'] for p in game_state['players'])}")
                     else:
                         print(f"Player {data['player']['name']} already exists in game state.")
                     
-                    # Send confirmation back to the player who joined
+                    # Send confirmation back to the player
                     await websocket.send(json.dumps({
-                        "type": "joinConfirmed",
-                        "player": data['player']
+                        'type': 'joinConfirmed',
+                        'player': data['player']
                     }))
                     
-                    # Broadcast updated player list to ALL clients
+                    # Broadcast updated player list
                     print(f"Broadcasting player update to {len(clients)} clients")
                     await broadcast({
-                        "type": "playersUpdate",
-                        "players": game_state['players']
+                        'type': 'playersUpdate',
+                        'players': game_state['players']
                     })
                     
                     print_game_state()
                 
                 # Handle player leaving
-                elif data['type'] == "playerLeft" and 'playerId' in data:
+                elif data.get('type') == 'playerLeft' and data.get('playerId'):
                     print(f"Player leaving: {data['playerId']}")
                     
                     # Remove player from game state
-                    player_index = next((i for i, p in enumerate(game_state['players']) 
-                                        if p['id'] == data['playerId']), -1)
+                    player_index = next((i for i, p in enumerate(game_state['players']) if p['id'] == data['playerId']), -1)
                     if player_index != -1:
                         removed_player = game_state['players'].pop(player_index)
                         print(f"Removed player: {removed_player['name']}")
                         
                         # Broadcast updated player list
                         await broadcast({
-                            "type": "playersUpdate",
-                            "players": game_state['players']
+                            'type': 'playersUpdate',
+                            'players': game_state['players']
                         })
                         
                         print_game_state()
@@ -183,83 +125,54 @@ async def handle_client(websocket, path):
                         print(f"Player {data['playerId']} not found in game state.")
                 
                 # Handle chat messages
-                elif data['type'] == "chatMessage" and 'message' in data:
-                    print(f"Chat message from {data['message'].get('senderName', 'unknown')}: {data['message'].get('text', '')}")
+                elif data.get('type') == 'chatMessage' and data.get('message'):
+                    print(f"Chat message from {data['message']['senderName']}: {data['message']['text']}")
                     
                     # Store message in game state
                     game_state['messages'].append(data['message'])
                     
                     # Broadcast message to all clients
                     await broadcast({
-                        "type": "newMessage",
-                        "message": data['message']
+                        'type': 'newMessage',
+                        'message': data['message']
                     })
-                    
-                    # If there are bot players, generate responses for them
-                    bots = [p for p in game_state['players'] if p.get('type') == 'bot']
-                    if bots and random.random() < 0.4:  # 40% chance of a bot responding
-                        # Choose a random bot to respond
-                        bot = random.choice(bots)
-                        
-                        # Generate bot response using OpenAI
-                        bot_response = await generate_bot_response(bot, game_state['messages'])
-                        
-                        # Create message object for bot response
-                        bot_message = {
-                            "id": f"bot_msg_{random.randint(10000, 99999)}",
-                            "senderId": bot['id'],
-                            "senderName": bot['name'],
-                            "text": bot_response,
-                            "timestamp": int(time.time() * 1000)
-                        }
-                        
-                        # Add slight delay to make it look more natural
-                        await asyncio.sleep(random.uniform(2.0, 5.0))
-                        
-                        # Store bot message in game state
-                        game_state['messages'].append(bot_message)
-                        
-                        # Broadcast bot message to all clients
-                        await broadcast({
-                            "type": "newMessage",
-                            "message": bot_message
-                        })
                 
-                # Handle ping messages (for testing connectivity)
-                elif data['type'] == "ping":
+                # Handle ping messages
+                elif data.get('type') == 'ping':
                     print(f"Ping from client {client_id}")
                     await websocket.send(json.dumps({
-                        "type": "pong",
-                        "timestamp": int(time.time() * 1000)
+                        'type': 'pong',
+                        'timestamp': int(time.time() * 1000)
                     }))
                 
-                # Handle getState messages (request for current state)
-                elif data['type'] == "getState":
+                # Handle get state messages
+                elif data.get('type') == 'getState':
                     print(f"State request from client {client_id}")
                     await websocket.send(json.dumps({
-                        "type": "gameState",
-                        "data": game_state
+                        'type': 'gameState',
+                        'data': game_state
                     }))
                 
-                # Handle reset messages (admin command to reset state)
-                elif data['type'] == "reset":
+                # Handle reset messages
+                elif data.get('type') == 'reset':
                     print(f"Reset request from client {client_id}")
                     game_state['players'] = []
                     game_state['messages'] = []
                     game_state['nextGameTime'] = int(time.time() * 1000) + 20000
                     
                     await broadcast({
-                        "type": "gameState",
-                        "data": game_state
+                        'type': 'gameState',
+                        'data': game_state
                     })
                     
                     print("Game state has been reset")
                     print_game_state()
-            
-            except json.JSONDecodeError:
-                print(f"Error decoding message from client {client_id}")
-            except Exception as e:
-                print(f"Error processing message: {e}")
+                
+            except Exception as error:
+                print(f"Error processing message: {error}")
+    
+    except Exception as e:
+        print(f"Connection error: {e}")
     
     finally:
         # Handle client disconnection
@@ -267,55 +180,50 @@ async def handle_client(websocket, path):
         clients.discard(websocket)
         print(f"Total clients: {len(clients)}")
 
-# Start periodic game state updates
-async def game_update_loop():
+async def start_game_updates():
+    """Periodic game state updates"""
     while True:
-        current_time = time.time() * 1000
+        await asyncio.sleep(1)
+        now = int(time.time() * 1000)
         
         # If we've passed the next game time
-        if current_time > game_state['nextGameTime']:
+        if now > game_state['nextGameTime']:
             if game_state['gameInProgress']:
                 # Game is already in progress, update timer for next game
-                game_state['nextGameTime'] = current_time + 180000  # 3 minutes from now
+                game_state['nextGameTime'] = now + 180000  # 3 minutes from now
             else:
                 # Start a new game
                 game_state['gameInProgress'] = True
                 print("Game started!")
                 
-                # After 60 seconds, end the game
-                game_state['nextGameTime'] = current_time + 60000  # Game lasts 60 seconds
+                # Schedule game end
+                asyncio.create_task(end_game())
             
             # Broadcast updated game state
             await broadcast({
-                "type": "gameState",
-                "data": game_state
+                'type': 'gameState',
+                'data': game_state
             })
-        
-        # Check if game should end
-        elif game_state['gameInProgress'] and current_time > game_state['nextGameTime']:
-            game_state['gameInProgress'] = False
-            game_state['nextGameTime'] = current_time + 20000  # 20 seconds until next game
-            print("Game ended!")
-            
-            # Broadcast updated game state
-            await broadcast({
-                "type": "gameState",
-                "data": game_state
-            })
-        
-        await asyncio.sleep(1)
 
-# Main server function
+async def end_game():
+    """End the current game after 60 seconds"""
+    await asyncio.sleep(60)
+    game_state['gameInProgress'] = False
+    game_state['nextGameTime'] = int(time.time() * 1000) + 20000
+    print("Game ended!")
+
 async def main():
+    # Start WebSocket server
+    server = await websockets.serve(handle_connection, "localhost", 8765)
+    
+    # Start game updates
+    game_updates_task = asyncio.create_task(start_game_updates())
+    
+    print('WebSocket server running on port 8765')
     print_game_state()
     
-    # Start the game update loop
-    asyncio.create_task(game_update_loop())
-    
-    # Start the WebSocket server
-    async with websockets.serve(handle_client, "localhost", 8765):
-        print("WebSocket server running on ws://localhost:8765")
-        await asyncio.Future()  # Run forever
+    # Wait for the server to close
+    await server.wait_closed()
 
 if __name__ == "__main__":
     asyncio.run(main())
