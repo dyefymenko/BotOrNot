@@ -1493,22 +1493,29 @@ function addSystemMessage(text) {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Add a bot message to the chat
+// Function to add a bot message using the OpenAI integration
 function addBotMessage(botPlayer) {
-  // List of potential bot messages
-  const botMessages = [
-    "Hello everyone! Excited to play this game with you all.",
-    "I've been playing games like this for years, they're always fun.",
-    "Has anyone here tried the beta version? This is my first time.",
-    "What's your strategy for identifying bots? I usually look for patterns in responses.",
-    "I think we should all share something personal to prove we're human. I'll start: I have a cat named Pixel.",
-    "The interface is really well designed. I like the color scheme.",
-    "Anyone else from the East Coast? It's getting late here!",
-    "I think one telltale sign of bots is that they respond too quickly sometimes."
-  ];
-  
-  const randomMessage = botMessages[Math.floor(Math.random() * botMessages.length)];
-  addMessage(botPlayer, randomMessage);
+  // Request a bot message from the server (which will use OpenAI)
+  if (sendToServer('requestBotMessage', { botId: botPlayer.id })) {
+    console.log(`Requested bot message for ${botPlayer.name}`);
+  } else {
+    console.log(`Failed to request bot message for ${botPlayer.name}`);
+    
+    // Fallback in case of connection issue
+    const fallbackMessages = [
+      "Hello everyone! Excited to play this game with you all.",
+      "I've been playing games like this for years, they're always fun.",
+      "Has anyone here tried the beta version? This is my first time.",
+      "What's your strategy for identifying bots? I usually look for patterns in responses.",
+      "I think we should all share something personal to prove we're human. I'll start: I have a cat named Pixel.",
+      "The interface is really well designed. I like the color scheme.",
+      "Anyone else from the East Coast? It's getting late here!",
+      "I think one telltale sign of bots is that they respond too quickly sometimes."
+    ];
+    
+    const randomMessage = fallbackMessages[Math.floor(Math.random() * fallbackMessages.length)];
+    addMessage(botPlayer, randomMessage);
+  }
 }
 
 // Add a message to the chat
