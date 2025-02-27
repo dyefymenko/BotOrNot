@@ -166,6 +166,15 @@
       box-shadow: 0 5px 15px rgba(110, 0, 255, 0.4);
     }
     
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .btn:disabled:hover::before {
+      width: 0;
+    }
+    
     /* Game Info Panel */
     .game-info {
       background: rgba(18, 18, 37, 0.6);
@@ -198,6 +207,43 @@
       color: var(--warning);
     }
     
+    /* Connection Status Indicator */
+    .connection-status {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      z-index: 100;
+    }
+    
+    .connection-status.online {
+      background-color: var(--success);
+      color: var(--dark);
+    }
+    
+    .connection-status.offline {
+      background-color: var(--danger);
+      color: var(--light);
+    }
+    
+    .connection-status.connecting {
+      background-color: var(--warning);
+      color: var(--dark);
+    }
+    
+    /* Late-joiner notification */
+    .late-join-notification {
+      background: rgba(255, 42, 109, 0.1);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+      text-align: center;
+      animation: pulse 2s infinite;
+    }
+    
     /* Waiting Room */
     .waiting-status {
       text-align: center;
@@ -226,6 +272,10 @@
       transform: scale(1.03);
     }
     
+    .player-card.you {
+      border: 2px solid var(--accent);
+    }
+    
     .avatar {
       width: 60px;
       height: 60px;
@@ -242,6 +292,11 @@
     .player-name {
       font-weight: bold;
       margin-bottom: 5px;
+    }
+    
+    .player-type {
+      font-size: 0.8rem;
+      opacity: 0.7;
     }
     
     .vote-btn {
@@ -320,6 +375,17 @@
     .message-sender {
       font-weight: bold;
       margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .message-sender .you-badge {
+      background-color: var(--accent);
+      color: var(--light);
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-left: 6px;
     }
     
     .message-text {
@@ -405,6 +471,10 @@
     
     .result-card.human {
       border: 2px solid var(--success);
+    }
+    
+    .result-card.you {
+      box-shadow: 0 0 15px var(--primary);
     }
     
     .result-label {
@@ -557,6 +627,92 @@
       transition: width 0.5s ease;
     }
     
+    /* User stats */
+    .user-stats {
+      background: rgba(18, 18, 37, 0.6);
+      border-radius: 10px;
+      padding: 15px;
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+    }
+
+    .spacer {
+  width: 20px; /* Width of the space you want */
+  display: inline-block;
+}
+    
+    .stat-item {
+      text-align: center;
+      padding: 10px;
+    }
+    
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: var(--secondary);
+    }
+    
+    .stat-label {
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+    
+    /* Toast notifications */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+    }
+    
+    .toast {
+      background: var(--dark);
+      color: var(--light);
+      border-radius: 8px;
+      padding: 15px 20px;
+      margin-top: 10px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      transform: translateX(120%);
+      transition: transform 0.3s ease;
+    }
+    
+    .toast.show {
+      transform: translateX(0);
+    }
+    
+    .toast.info {
+      border-left: 4px solid var(--secondary);
+    }
+    
+    .toast.success {
+      border-left: 4px solid var(--success);
+    }
+    
+    .toast.warning {
+      border-left: 4px solid var(--warning);
+    }
+    
+    .toast.error {
+      border-left: 4px solid var(--danger);
+    }
+    
+    .toast-close {
+      background: none;
+      border: none;
+      color: var(--light);
+      margin-left: 10px;
+      cursor: pointer;
+      opacity: 0.7;
+    }
+    
+    .toast-close:hover {
+      opacity: 1;
+    }
+    
     @media (max-width: 768px) {
       .logo {
         font-size: 2.5rem;
@@ -573,6 +729,14 @@
   </style>
 </head>
 <body>
+  <!-- Connection Status Indicator -->
+  <div class="connection-status connecting" id="connectionStatus">
+    Connecting...
+  </div>
+  
+  <!-- Toast Notifications -->
+  <div class="toast-container" id="toastContainer"></div>
+  
   <div class="container">
     <header>
       <h1 class="logo">BOT or NOT?</h1>
@@ -597,63 +761,41 @@
       
       <div class="game-info">
         <div class="info-header">
-          <div class="prize-pool">Prize Pool: 230 USDC</div>
-          <div class="timer">Next Game: 03:42</div>
+          <div class="prize-pool">Prize Pool: <span id="prizePoolAmount">230</span> USDC</div>
+          <div class="spacer"></div>
+          <div class="timer" id="nextGameTimer">Next Game: 03:42</div>
         </div>
         
-        <h3>Upcoming Game: #4281</h3>
-        <p>23 players waiting • Join now to secure your spot</p>
+        <h3>Upcoming Game: #<span id="upcomingGameId">4281</span></h3>
+        <p><span id="lobbyPlayerCount">23</span> players waiting • Join now to secure your spot</p>
         
-        <div class="players-grid">
-          <div class="player-card">
-            <div class="avatar">JD</div>
-            <div class="player-name">JohnDoe</div>
-          </div>
-          
-          <div class="player-card">
-            <div class="avatar">AK</div>
-            <div class="player-name">Alice_K</div>
-          </div>
-          
-          <div class="player-card">
-            <div class="avatar">MR</div>
-            <div class="player-name">MaxR</div>
-          </div>
-          
-          <div class="player-card">
-            <div class="avatar">SJ</div>
-            <div class="player-name">SamJackson</div>
-          </div>
-          
-          <div class="player-card">
-            <div class="avatar">ET</div>
-            <div class="player-name">ElenaT</div>
-          </div>
-          
-          <div class="player-card">
-            <div class="avatar">RB</div>
-            <div class="player-name">RobotBrain</div>
-          </div>
+        <div class="players-grid" id="lobbyPlayers">
+          <!-- Player cards will be dynamically generated -->
         </div>
       </div>
     </div>
     
     <!-- WAITING ROOM VIEW -->
     <div id="waitingView" class="view">
+      <div id="lateJoinNotification" class="late-join-notification" style="display:none;">
+        <p>A game is already in progress! You'll be added to the next game starting in <span id="nextGameCountdown">00:00</span>.</p>
+      </div>
+      
       <div class="game-info">
         <div class="info-header">
-          <div class="prize-pool">Prize Pool: 230 USDC</div>
+          <div class="prize-pool">Prize Pool: <span id="waitingPrizePool">230</span> USDC</div>
+          <div class="spacer"></div>
           <div class="timer" id="waitingTimer">Starting in: 01:00</div>
         </div>
         
-        <h3>Game #4281 Waiting Room</h3>
-        <p class="waiting-status">Waiting for game to start...</p>
+        <h3>Game #<span id="waitingGameId">4281</span> Waiting Room</h3>
+        <p class="waiting-status" id="waitingStatus">Waiting for game to start...</p>
         
         <div class="progress-container">
           <div class="progress-bar" id="waitingProgress" style="width: 0%"></div>
         </div>
         
-        <p>24 players in lobby</p>
+        <p><span id="waitingPlayerCount">24</span> players in lobby</p>
         
         <div class="players-grid" id="waitingPlayers">
           <!-- Player cards will be added dynamically -->
@@ -665,7 +807,7 @@
     <div id="chatView" class="view">
       <div class="chat-container">
         <div class="chat-header">
-          <h3>Game #4281 Chat Room</h3>
+          <h3>Game #<span id="chatGameId">4281</span> Chat Room</h3>
           <div class="timer" id="chatTimer">Time left: 01:00</div>
         </div>
         
@@ -684,6 +826,13 @@
       </div>
       
       <p class="waiting-status">Chat with other players! Can you identify who's human and who's a bot?</p>
+      
+      <div class="game-info">
+        <h3>Current Players</h3>
+        <div class="players-grid" id="currentPlayers">
+          <!-- Player cards will be added dynamically -->
+        </div>
+      </div>
     </div>
     
     <!-- VOTING VIEW -->
@@ -714,7 +863,22 @@
           <!-- Results will be added dynamically -->
         </div>
         
-        <button class="btn play-again-btn" onclick="resetGame()">Play Again</button>
+        <div class="user-stats">
+          <div class="stat-item">
+            <div class="stat-value" id="playerEarnings">0</div>
+            <div class="stat-label">USDC Earned</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="playerWinRate">0%</div>
+            <div class="stat-label">Win Rate</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="playerGamesPlayed">0</div>
+            <div class="stat-label">Games Played</div>
+          </div>
+        </div>
+        
+        <button class="btn play-again-btn" onclick="playAgain()">Play Again</button>
       </div>
     </div>
   </div>
@@ -727,7 +891,7 @@
       <form id="humanForm">
         <div class="input-group">
           <label for="username">Choose a Username</label>
-          <input type="text" id="username" placeholder="Your display name">
+          <input type="text" id="username" placeholder="Your display name" required>
         </div>
         
         <div class="input-group">
@@ -747,7 +911,7 @@
       <form id="botForm">
         <div class="input-group">
           <label for="botname">Bot Name</label>
-          <input type="text" id="botname" placeholder="Your bot's display name">
+          <input type="text" id="botname" placeholder="Your bot's display name" required>
         </div>
         
         <div class="input-group">
@@ -764,453 +928,1028 @@
       </form>
     </div>
   </div>
-
+  
+  <footer class="footer">
+    <p>© 2025 HUMAN or BOT? — Play to win, trust no one.</p>
+  </footer>
   
   <script>
-    // Game State
-    const gameState = {
-      currentView: 'joinView',
-      players: [
-        { id: 1, name: 'JohnDoe', initials: 'JD', isBot: false, votes: 0 },
-        { id: 2, name: 'Alice_K', initials: 'AK', isBot: false, votes: 0 },
-        { id: 3, name: 'MaxR', initials: 'MR', isBot: false, votes: 0 },
-        { id: 4, name: 'SamJackson', initials: 'SJ', isBot: true, votes: 0 },  // This is our bot
-        { id: 5, name: 'ElenaT', initials: 'ET', isBot: false, votes: 0 },
-        { id: 6, name: 'RobotBrain', initials: 'RB', isBot: false, votes: 0 }
-      ],
-      currentPlayer: null,
-      selectedVote: null,
-      botMessages: [
-        "Hello everyone! Excited to play this game with you all.",
-        "I've been playing games like this for years, they're always fun.",
-        "Has anyone here tried the beta version? This is my first time.",
-        "What's your strategy for identifying bots? I usually look for patterns in responses.",
-        "I think we should all share something personal to prove we're human. I'll start: I have a cat named Pixel.",
-        "The interface is really well designed. I like the color scheme.",
-        "Anyone else from the East Coast? It's getting late here!",
-        "I think one telltale sign of bots is that they respond too quickly sometimes."
-      ],
-      humanMessages: [
-        "Hey all! Let's see if we can spot the bot!",
-        "I'm terrible at these games but they're so addictive",
-        "The prize pool looks nice today!",
-        "Does anyone have tips for spotting bots?",
-        "I think that's a bot right there...",
-        "How many people are playing today?",
-        "LOL this is harder than I thought",
-        "I'm 99% sure I know who it is!"
-      ]
+    // Game state - centralized state management
+const gameState = {
+  connected: false,
+  currentView: 'joinView',
+  currentGame: null,
+  currentPlayer: null,
+  players: [],
+  messages: [],
+  gameInProgress: false,
+  nextGameTime: null,
+  selectedVote: null,
+  socket: null,
+  userStats: {
+    gamesPlayed: 0,
+    gamesWon: 0,
+    totalEarnings: 0
+  }
+};
+
+// Connect to WebSocket server
+function connectToServer() {
+  updateConnectionStatus('connecting');
+  
+  try {
+    // Close existing connection if any
+    if (gameState.socket) {
+      console.log("Closing existing connection before reconnecting");
+      gameState.socket.close();
+    }
+    
+    // Create new WebSocket connection
+    gameState.socket = new WebSocket('ws://localhost:8765');
+    
+    // Connection opened
+    gameState.socket.onopen = function(event) {
+      console.log("Connected to WebSocket server");
+      gameState.connected = true;
+      updateConnectionStatus('online');
+      
+      // Send a ping to test connection
+      sendToServer('ping', {});
+      
+      // Request current game state
+      sendToServer('getState', {});
     };
     
-    let waitingInterval, chatInterval, votingInterval;
+    // Listen for messages
+    gameState.socket.onmessage = function(event) {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("Received from server:", data);
+        handleServerMessage(data);
+      } catch (error) {
+        console.error("Error parsing message from server:", error);
+      }
+    };
     
-    // View Management
-    function showView(viewId) {
-      // Hide all views
-      document.querySelectorAll('.view').forEach(view => {
-        view.classList.remove('active');
-      });
+    // Connection closed
+    gameState.socket.onclose = function(event) {
+      console.log("WebSocket connection closed:", event);
+      gameState.connected = false;
+      updateConnectionStatus('offline');
       
-      // Show the requested view
-      document.getElementById(viewId).classList.add('active');
-      gameState.currentView = viewId;
+      // Try to reconnect after a delay
+      setTimeout(connectToServer, 3000);
+    };
+    
+    // Connection error
+    gameState.socket.onerror = function(error) {
+      console.error("WebSocket error:", error);
+      updateConnectionStatus('offline');
+    };
+    
+  } catch (error) {
+    console.error("Connection error:", error);
+    updateConnectionStatus('offline');
+  }
+}
+
+// Send messages to the server
+function sendToServer(messageType, messageData) {
+  if (!gameState.connected || !gameState.socket) {
+    showToast('error', 'Not connected to server');
+    return false;
+  }
+  
+  try {
+    const payload = {
+      type: messageType,
+      ...messageData
+    };
+    console.log("Sending to server:", payload);
+    gameState.socket.send(JSON.stringify(payload));
+    return true;
+  } catch (error) {
+    console.error("Error sending message:", error);
+    return false;
+  }
+}
+
+// Handle messages from the server
+function handleServerMessage(data) {
+  console.log(`Processing ${data.type} message:`, data);
+  
+  switch(data.type) {
+    case "gameState":
+      // Update our local game state with server data
+      if (data.data) {
+        if (Array.isArray(data.data.players)) {
+          console.log(`Updating players from ${gameState.players.length} to ${data.data.players.length}`);
+          gameState.players = data.data.players;
+        }
+        
+        gameState.gameInProgress = data.data.gameInProgress;
+        gameState.nextGameTime = data.data.nextGameTime;
+        gameState.currentGame = data.data.currentGameId;
+        
+        // Update UI with new data
+        updateAllPlayerLists();
+        updateGameCounters();
+        updateNextGameCountdown();
+      }
+      break;
+      
+    case "playersUpdate":
+      // Update player list
+      if (Array.isArray(data.players)) {
+        console.log(`Updating players from ${gameState.players.length} to ${data.players.length}`);
+        gameState.players = data.players;
+        
+        // Update UI with new player data
+        updateAllPlayerLists();
+        updateGameCounters();
+      }
+      break;
+      
+    case "newMessage":
+      // Add message to chat
+      if (data.message && data.message.senderId) {
+        const player = gameState.players.find(p => p.id === data.message.senderId);
+        if (player) {
+          addMessage(player, data.message.text);
+        }
+      }
+      break;
+      
+    case "pong":
+      console.log("Server responded to ping");
+      break;
+      
+    default:
+      console.log("Unknown message type received:", data.type);
+  }
+}
+
+// Update connection status display
+function updateConnectionStatus(status) {
+  const statusEl = document.getElementById('connectionStatus');
+  statusEl.className = 'connection-status ' + status;
+  
+  switch(status) {
+    case 'online':
+      statusEl.textContent = 'Connected';
+      break;
+    case 'offline':
+      statusEl.textContent = 'Disconnected';
+      gameState.connected = false;
+      
+      // Auto-reconnect attempt
+      setTimeout(connectToServer, 3000);
+      break;
+    case 'connecting':
+      statusEl.textContent = 'Connecting...';
+      break;
+  }
+}
+
+// Update all player lists throughout UI
+function updateAllPlayerLists() {
+  updateLobbyPlayers();
+  updateWaitingPlayers();
+  updateCurrentPlayers();
+}
+
+// Update game counters (player count, prize pool, etc.)
+function updateGameCounters() {
+  // Update prize pool (10 USDC per player)
+  const poolAmount = gameState.players.length * 10;
+  
+  // Update lobby view counters
+  const prizePoolAmount = document.getElementById('prizePoolAmount');
+  if (prizePoolAmount) {
+    prizePoolAmount.textContent = poolAmount;
+  }
+  
+  const lobbyPlayerCount = document.getElementById('lobbyPlayerCount');
+  if (lobbyPlayerCount) {
+    lobbyPlayerCount.textContent = gameState.players.length;
+  }
+  
+  const upcomingGameId = document.getElementById('upcomingGameId');
+  if (upcomingGameId) {
+    upcomingGameId.textContent = gameState.currentGame || "4281";
+  }
+  
+  // Update waiting room counters
+  const waitingPrizePool = document.getElementById('waitingPrizePool');
+  if (waitingPrizePool) {
+    waitingPrizePool.textContent = poolAmount;
+  }
+  
+  const waitingPlayerCount = document.getElementById('waitingPlayerCount');
+  if (waitingPlayerCount) {
+    waitingPlayerCount.textContent = gameState.players.length;
+  }
+}
+
+// Update lobby players list
+function updateLobbyPlayers() {
+  const lobbyPlayersEl = document.getElementById('lobbyPlayers');
+  if (!lobbyPlayersEl) return;
+  
+  console.log(`Updating lobby players list with ${gameState.players.length} players`);
+  lobbyPlayersEl.innerHTML = '';
+  
+  // Show up to 6 players in the lobby preview
+  const playersToShow = gameState.players.slice(0, Math.min(6, gameState.players.length));
+  
+  if (playersToShow.length === 0) {
+    lobbyPlayersEl.innerHTML = '<div class="player-card"><div class="player-name">No players yet</div></div>';
+    return;
+  }
+  
+  playersToShow.forEach(player => {
+    const playerCard = document.createElement('div');
+    playerCard.classList.add('player-card');
+    
+    // Check if this is the current user
+    if (gameState.currentPlayer && player.id === gameState.currentPlayer.id) {
+      playerCard.classList.add('you');
     }
     
-    // Modal Management
-    function openModal(type) {
-      if (type === 'human') {
-        document.getElementById('humanModal').classList.add('active');
-      } else {
-        document.getElementById('botModal').classList.add('active');
+    const initials = player.initials || player.name.substring(0, 2).toUpperCase();
+    
+    playerCard.innerHTML = `
+      <div class="avatar">${initials}</div>
+      <div class="player-name">${player.name}${gameState.currentPlayer && player.id === gameState.currentPlayer.id ? ' (You)' : ''}</div>
+    `;
+    
+    lobbyPlayersEl.appendChild(playerCard);
+  });
+}
+
+// Update waiting room players list
+function updateWaitingPlayers() {
+  const waitingPlayersEl = document.getElementById('waitingPlayers');
+  if (!waitingPlayersEl) return;
+  
+  console.log(`Updating waiting players list with ${gameState.players.length} players`);
+  waitingPlayersEl.innerHTML = '';
+  
+  if (gameState.players.length === 0) {
+    waitingPlayersEl.innerHTML = '<div class="player-card"><div class="player-name">No players yet</div></div>';
+    return;
+  }
+  
+  gameState.players.forEach(player => {
+    const playerCard = document.createElement('div');
+    playerCard.classList.add('player-card');
+    
+    // Check if this is the current user
+    if (gameState.currentPlayer && player.id === gameState.currentPlayer.id) {
+      playerCard.classList.add('you');
+    }
+    
+    const initials = player.initials || player.name.substring(0, 2).toUpperCase();
+    
+    playerCard.innerHTML = `
+      <div class="avatar">${initials}</div>
+      <div class="player-name">${player.name}${gameState.currentPlayer && player.id === gameState.currentPlayer.id ? ' (You)' : ''}</div>
+    `;
+    
+    waitingPlayersEl.appendChild(playerCard);
+  });
+}
+
+// Update current players list (during game)
+function updateCurrentPlayers() {
+  const currentPlayersEl = document.getElementById('currentPlayers');
+  if (!currentPlayersEl) return;
+  
+  currentPlayersEl.innerHTML = '';
+  
+  if (gameState.players.length === 0) {
+    currentPlayersEl.innerHTML = '<div class="player-card"><div class="player-name">No players yet</div></div>';
+    return;
+  }
+  
+  gameState.players.forEach(player => {
+    const playerCard = document.createElement('div');
+    playerCard.classList.add('player-card');
+    
+    // Check if this is the current user
+    if (gameState.currentPlayer && player.id === gameState.currentPlayer.id) {
+      playerCard.classList.add('you');
+    }
+    
+    const initials = player.initials || player.name.substring(0, 2).toUpperCase();
+    
+    playerCard.innerHTML = `
+      <div class="avatar">${initials}</div>
+      <div class="player-name">${player.name}${gameState.currentPlayer && player.id === gameState.currentPlayer.id ? ' (You)' : ''}</div>
+    `;
+    
+    currentPlayersEl.appendChild(playerCard);
+  });
+}
+
+// Update next game countdown timer
+function updateNextGameCountdown() {
+  if (!gameState.nextGameTime) return;
+  
+  const now = new Date().getTime();
+  const timeLeft = Math.max(0, gameState.nextGameTime - now);
+  
+  const minutes = Math.floor(timeLeft / (60 * 1000));
+  const seconds = Math.floor((timeLeft % (60 * 1000)) / 1000);
+  
+  const timeString = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  
+  // Update various timer displays
+  const nextGameTimer = document.getElementById('nextGameTimer');
+  if (nextGameTimer) {
+    nextGameTimer.textContent = `Next Game: ${timeString}`;
+  }
+  
+  const nextGameCountdown = document.getElementById('nextGameCountdown');
+  if (nextGameCountdown) {
+    nextGameCountdown.textContent = timeString;
+  }
+  
+  // If in waiting room, update that timer too
+  if (gameState.currentView === 'waitingView') {
+    const waitingTimer = document.getElementById('waitingTimer');
+    if (waitingTimer) {
+      waitingTimer.textContent = `Starting in: ${timeString}`;
+    }
+    
+    // Update progress bar
+    const maxWaitTime = 3 * 60 * 1000; // 3 minutes
+    const elapsedPercent = ((maxWaitTime - timeLeft) / maxWaitTime) * 100;
+    const waitingProgress = document.getElementById('waitingProgress');
+    if (waitingProgress) {
+      waitingProgress.style.width = `${elapsedPercent}%`;
+    }
+  }
+  
+  // Check if game should start
+  if (timeLeft <= 0 && gameState.currentView === 'waitingView') {
+    startGame();
+  }
+}
+
+// Join the game as a player
+function joinGame(type) {
+  let username;
+  let wallet;
+  let isBot = false;
+  
+  if (type === 'human') {
+    username = document.getElementById('username').value;
+    wallet = document.getElementById('wallet').value;
+    
+    if (!username || !wallet) {
+      showToast('error', 'Please fill in all fields');
+      return;
+    }
+    
+    closeModal('human');
+  } else {
+    username = document.getElementById('botname').value;
+    wallet = document.getElementById('walletBot').value;
+    const instructions = document.getElementById('instructions').value || '';
+    isBot = true;
+    
+    if (!username || !wallet) {
+      showToast('error', 'Please fill in all fields');
+      return;
+    }
+    
+    closeModal('bot');
+  }
+  
+  showToast('info', 'Processing join request...', 1500);
+  
+  // Create player object
+  const initials = username.substring(0, 2).toUpperCase();
+  gameState.currentPlayer = {
+    id: generateUniqueId(),
+    name: username,
+    walletAddress: wallet,
+    initials: initials,
+    type: isBot ? 'bot' : 'human',
+    votes: 0
+  };
+  
+  // Send to server
+  if (sendToServer('joinGame', { player: gameState.currentPlayer })) {
+    console.log("Join request sent successfully");
+    showToast('success', 'Joined game successfully!');
+    
+    // Move to waiting room
+    startWaitingRoom();
+  } else {
+    showToast('error', 'Failed to join game. Please try again.');
+  }
+}
+
+// Generate a unique ID for players
+function generateUniqueId() {
+  return 'id_' + Math.random().toString(36).substr(2, 9);
+}
+
+// Start waiting room view
+function startWaitingRoom() {
+  console.log(`Starting waiting room with ${gameState.players.length} players`);
+  
+  // Move to waiting room view
+  showView('waitingView');
+  
+  // Update displays
+  updateWaitingPlayers();
+  updateGameCounters();
+  updateNextGameCountdown();
+  
+  // Update game ID
+  const waitingGameId = document.getElementById('waitingGameId');
+  if (waitingGameId) {
+    waitingGameId.textContent = gameState.currentGame || "4281";
+  }
+  
+  // If a game is in progress, indicate waiting for next game
+  const waitingStatus = document.getElementById('waitingStatus');
+  if (waitingStatus) {
+    if (gameState.gameInProgress) {
+      waitingStatus.textContent = 'Waiting for next game...';
+      document.getElementById('lateJoinNotification').style.display = 'block';
+    } else {
+      waitingStatus.textContent = 'Waiting for game to start...';
+      document.getElementById('lateJoinNotification').style.display = 'none';
+    }
+  }
+  
+  // Start polling timer
+  startTimerUpdates();
+}
+
+// Start a timer to update the UI every second
+function startTimerUpdates() {
+  // Clear any existing interval
+  if (window.timerInterval) {
+    clearInterval(window.timerInterval);
+  }
+  
+  // Update timers every second
+  window.timerInterval = setInterval(() => {
+    updateNextGameCountdown();
+  }, 1000);
+}
+
+// Start the game (chat phase)
+function startGame() {
+  // Update game state
+  gameState.gameInProgress = true;
+  gameState.messages = [];
+  
+  // Update game ID in chat
+  document.getElementById('chatGameId').textContent = gameState.currentGame;
+  
+  // Move to chat view
+  showView('chatView');
+  
+  // Show welcome message
+  addSystemMessage('Welcome to Game #' + gameState.currentGame + '! Chat with other players for 1 minute. One of you is an AI bot - can you figure out who?');
+  
+  // Set up countdown
+  let seconds = 60;
+  const chatTimer = document.getElementById('chatTimer');
+  const chatProgress = document.getElementById('chatProgress');
+  
+  const chatInterval = setInterval(() => {
+    seconds--;
+    chatTimer.textContent = `Time left: ${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+    
+    // Update progress bar
+    const progressPercent = (seconds / 60) * 100;
+    chatProgress.style.width = `${progressPercent}%`;
+    
+    // Add AI bot messages periodically
+    if (seconds % 8 === 0) {
+      // Find a bot in the game
+      const botsInGame = gameState.players.filter(p => p.type === 'bot' && (!gameState.currentPlayer || p.id !== gameState.currentPlayer.id));
+      
+      if (botsInGame.length > 0) {
+        const randomBot = botsInGame[Math.floor(Math.random() * botsInGame.length)];
+        addBotMessage(randomBot);
       }
     }
     
-    function closeModal(type) {
-      if (type === 'human') {
-        document.getElementById('humanModal').classList.remove('active');
-      } else {
-        document.getElementById('botModal').classList.remove('active');
+    // Add random human messages occasionally
+    if (seconds % 15 === 3) {
+      const humanPlayers = gameState.players.filter(p => p.type === 'human' && (!gameState.currentPlayer || p.id !== gameState.currentPlayer.id));
+      
+      if (humanPlayers.length > 0) {
+        const randomPlayer = humanPlayers[Math.floor(Math.random() * humanPlayers.length)];
+        addRandomHumanMessage(randomPlayer);
       }
     }
     
-    // Game Flow Functions
-    function joinGame(type) {
-      let username;
-      let isBot = false;
-      
-      if (type === 'human') {
-        username = document.getElementById('username').value || 'Player' + Math.floor(Math.random() * 1000);
-        closeModal('human');
-      } else {
-        username = document.getElementById('botname').value || 'Bot' + Math.floor(Math.random() * 1000);
-        isBot = true;
-        closeModal('bot');
+    if (seconds <= 0) {
+      clearInterval(chatInterval);
+      startVoting();
+    }
+  }, 1000);
+}
+
+// Send a chat message
+function sendMessage() {
+  const messageInput = document.getElementById('messageInput');
+  const message = messageInput.value.trim();
+  
+  if (message && gameState.currentPlayer) {
+    // Create message object
+    const messageObj = {
+      id: generateUniqueId(),
+      senderId: gameState.currentPlayer.id,
+      senderName: gameState.currentPlayer.name,
+      text: message,
+      timestamp: new Date().getTime()
+    };
+    
+    // Send to server
+    sendToServer('chatMessage', { message: messageObj });
+    
+    // Add message locally
+    
+    // Clear input
+    messageInput.value = '';
+  }
+}
+
+// Add a system message to the chat
+function addSystemMessage(text) {
+  const chatMessages = document.getElementById('chatMessages');
+  const messageElement = document.createElement('div');
+  messageElement.classList.add('message');
+  
+  messageElement.innerHTML = `
+    <div class="message-avatar" style="background: linear-gradient(45deg, var(--accent), var(--primary))">SYS</div>
+    <div class="message-content">
+      <div class="message-sender">System</div>
+      <div class="message-text">${text}</div>
+    </div>
+  `;
+  
+  chatMessages.appendChild(messageElement);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Add a bot message to the chat
+function addBotMessage(botPlayer) {
+  // List of potential bot messages
+  const botMessages = [
+    "Hello everyone! Excited to play this game with you all.",
+    "I've been playing games like this for years, they're always fun.",
+    "Has anyone here tried the beta version? This is my first time.",
+    "What's your strategy for identifying bots? I usually look for patterns in responses.",
+    "I think we should all share something personal to prove we're human. I'll start: I have a cat named Pixel.",
+    "The interface is really well designed. I like the color scheme.",
+    "Anyone else from the East Coast? It's getting late here!",
+    "I think one telltale sign of bots is that they respond too quickly sometimes."
+  ];
+  
+  const randomMessage = botMessages[Math.floor(Math.random() * botMessages.length)];
+  addMessage(botPlayer, randomMessage);
+}
+
+// Add a random human message to the chat
+function addRandomHumanMessage(player) {
+  // List of potential human messages
+  const humanMessages = [
+    "Hey all! Let's see if we can spot the bot!",
+    "I'm terrible at these games but they're so addictive",
+    "The prize pool looks nice today!",
+    "Does anyone have tips for spotting bots?",
+    "I think that's a bot right there...",
+    "How many people are playing today?",
+    "LOL this is harder than I thought",
+    "I'm 99% sure I know who it is!"
+  ];
+  
+  const randomMessage = humanMessages[Math.floor(Math.random() * humanMessages.length)];
+  addMessage(player, randomMessage);
+}
+
+// Add a message to the chat
+function addMessage(player, text) {
+  const chatMessages = document.getElementById('chatMessages');
+  const messageElement = document.createElement('div');
+  messageElement.classList.add('message');
+  
+  const isCurrentPlayer = gameState.currentPlayer && player.id === gameState.currentPlayer.id;
+  const initials = player.initials || player.name.substring(0, 2).toUpperCase();
+  
+  messageElement.innerHTML = `
+    <div class="message-avatar" style="background: ${isCurrentPlayer ? 'linear-gradient(45deg, var(--accent), var(--primary))' : 'linear-gradient(45deg, var(--primary), var(--secondary))'}">${initials}</div>
+    <div class="message-content">
+      <div class="message-sender">${player.name}${isCurrentPlayer ? '<span class="you-badge">You</span>' : ''}</div>
+      <div class="message-text">${text}</div>
+    </div>
+  `;
+  
+  chatMessages.appendChild(messageElement);
+  
+  // Store message in state
+  gameState.messages.push({
+    id: generateUniqueId(),
+    senderId: player.id,
+    senderName: player.name,
+    text: text,
+    timestamp: new Date().getTime()
+  });
+  
+  // Scroll to bottom
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Start the voting phase
+function startVoting() {
+  showView('votingView');
+  populateVotingPlayers();
+  
+  // Set up countdown
+  let seconds = 10;
+  const votingTimer = document.getElementById('votingTimer');
+  const votingProgress = document.getElementById('votingProgress');
+  
+  const votingInterval = setInterval(() => {
+    seconds--;
+    votingTimer.textContent = `Time left: 00:${String(seconds).padStart(2, '0')}`;
+    
+    // Update progress bar
+    const progressPercent = (seconds / 10) * 100;
+    votingProgress.style.width = `${progressPercent}%`;
+    
+    if (seconds <= 0) {
+      clearInterval(votingInterval);
+      showResults();
+    }
+  }, 1000);
+}
+
+// Populate the voting players list
+function populateVotingPlayers() {
+  const votingPlayers = document.getElementById('votingPlayers');
+  votingPlayers.innerHTML = '';
+  
+  // Show all players except current player
+  const playersToVoteOn = gameState.players.filter(p => !gameState.currentPlayer || p.id !== gameState.currentPlayer.id);
+  
+  if (playersToVoteOn.length === 0) {
+    votingPlayers.innerHTML = '<div class="player-card"><div class="player-name">No other players to vote on</div></div>';
+    return;
+  }
+  
+  playersToVoteOn.forEach(player => {
+    const playerCard = document.createElement('div');
+    playerCard.classList.add('player-card');
+    
+    const initials = player.initials || player.name.substring(0, 2).toUpperCase();
+    
+    playerCard.innerHTML = `
+      <div class="avatar">${initials}</div>
+      <div class="player-name">${player.name}</div>
+      <button class="vote-btn" onclick="voteForPlayer('${player.id}')">VOTE AS BOT</button>
+    `;
+    
+    votingPlayers.appendChild(playerCard);
+  });
+}
+
+// Vote for a player
+function voteForPlayer(playerId) {
+  // Update UI
+  document.querySelectorAll('.vote-btn').forEach(btn => {
+    btn.classList.remove('selected');
+  });
+  
+  const voteButtons = document.querySelectorAll('.vote-btn');
+  for (let i = 0; i < voteButtons.length; i++) {
+    if (voteButtons[i].onclick.toString().includes(`'${playerId}'`)) {
+      voteButtons[i].classList.add('selected');
+      break;
+    }
+  }
+  
+  // Store vote in state
+  gameState.selectedVote = playerId;
+  
+  // Add vote to player
+  const votedPlayer = gameState.players.find(p => p.id === playerId);
+  if (votedPlayer) {
+    votedPlayer.votes = (votedPlayer.votes || 0) + 1;
+  }
+  
+  showToast('info', `You voted for ${votedPlayer ? votedPlayer.name : 'unknown player'}`);
+  
+  // In a real implementation, you would send this vote to the server
+  sendToServer('playerVote', { voterId: gameState.currentPlayer.id, votedId: playerId });
+}
+
+// Show game results
+function showResults() {
+  showView('resultsView');
+  
+  // Simulate other player votes
+  simulateVotes();
+  
+  // Display results
+  displayResults();
+  
+  // Update player stats
+  updatePlayerStats();
+  
+  // Update game state for next game
+  prepareForNextGame();
+}
+
+// Simulate votes from other players
+function simulateVotes() {
+  // Each player votes for someone they think is a bot
+  gameState.players.forEach(voter => {
+    // Skip if this is the current player or they already voted
+    if (gameState.currentPlayer && voter.id === gameState.currentPlayer.id) return;
+    
+    const candidates = gameState.players.filter(p => p.id !== voter.id);
+    let votedPlayer;
+    
+    if (Math.random() < 0.6) {
+      // Try to vote for a bot player (simulate some intelligence)
+      const botCandidates = candidates.filter(p => p.type === 'bot');
+      if (botCandidates.length > 0) {
+        votedPlayer = botCandidates[Math.floor(Math.random() * botCandidates.length)];
       }
-      
-      // Create player
-      const initials = username.substring(0, 2).toUpperCase();
-      gameState.currentPlayer = {
-        id: gameState.players.length + 1,
-        name: username,
-        initials: initials,
-        isBot: isBot,
-        votes: 0
-      };
-      
-      // Add player to game
-      gameState.players.push(gameState.currentPlayer);
-      
-      // Go to waiting room
-      startWaitingRoom();
     }
     
-    function startWaitingRoom() {
-      showView('waitingView');
-      populateWaitingRoom();
-      
-      // Set up countdown
-      let seconds = 30;
-      const waitingTimer = document.getElementById('waitingTimer');
-      const waitingProgress = document.getElementById('waitingProgress');
-      
-      waitingInterval = setInterval(() => {
-        seconds--;
-        const displayMinutes = Math.floor(seconds / 60);
-        const displaySeconds = seconds % 60;
-        
-        waitingTimer.textContent = `Starting in: ${String(displayMinutes).padStart(2, '0')}:${String(displaySeconds).padStart(2, '0')}`;
-        
-        // Update progress bar
-        const progressPercent = 100 - ((seconds / 60) * 100);
-        waitingProgress.style.width = `${progressPercent}%`;
-        
-        if (seconds <= 0) {
-          clearInterval(waitingInterval);
-          startChatRoom();
-        }
-      }, 1000);
+    // If no vote yet, vote randomly
+    if (!votedPlayer && candidates.length > 0) {
+      votedPlayer = candidates[Math.floor(Math.random() * candidates.length)];
     }
     
-    function populateWaitingRoom() {
-      const waitingPlayers = document.getElementById('waitingPlayers');
-      waitingPlayers.innerHTML = '';
-      
-      gameState.players.forEach(player => {
-        const playerCard = document.createElement('div');
-        playerCard.classList.add('player-card');
-        
-        playerCard.innerHTML = `
-          <div class="avatar" style="background: ${player.id === gameState.currentPlayer?.id ? 'linear-gradient(45deg, var(--accent), var(--primary))' : 'linear-gradient(45deg, var(--primary), var(--secondary))'}">${player.initials}</div>
-          <div class="player-name">${player.name}${player.id === gameState.currentPlayer?.id ? ' (You)' : ''}</div>
-        `;
-        
-        waitingPlayers.appendChild(playerCard);
-      });
+    if (votedPlayer) {
+      votedPlayer.votes = (votedPlayer.votes || 0) + 1;
+    }
+  });
+}
+
+// Display game results
+function displayResults() {
+  const resultsGrid = document.getElementById('resultsGrid');
+  resultsGrid.innerHTML = '';
+  
+  if (gameState.players.length === 0) {
+    resultsGrid.innerHTML = '<div class="result-card"><div class="player-name">No players in game</div></div>';
+    return;
+  }
+  
+  // Find player with most votes (the "winner")
+  const sortedPlayers = [...gameState.players].sort((a, b) => (b.votes || 0) - (a.votes || 0));
+  const mostVotedPlayer = sortedPlayers[0];
+  
+  // Find actual bots
+  const actualBots = gameState.players.filter(p => p.type === 'bot');
+  
+  // Check if most voted player is actually a bot
+  const correctIdentification = mostVotedPlayer && mostVotedPlayer.type === 'bot';
+  
+  // Create results cards
+  gameState.players.forEach(player => {
+    const resultCard = document.createElement('div');
+    resultCard.classList.add('result-card');
+    resultCard.classList.add(player.type === 'bot' ? 'bot' : 'human');
+    
+    // Highlight current player
+    if (gameState.currentPlayer && player.id === gameState.currentPlayer.id) {
+      resultCard.classList.add('you');
     }
     
-    function startChatRoom() {
-      showView('chatView');
-      initializeChat();
-      
-      // Set up countdown
-      let seconds = 60;
-      const chatTimer = document.getElementById('chatTimer');
-      const chatProgress = document.getElementById('chatProgress');
-      
-      chatInterval = setInterval(() => {
-        seconds--;
-        chatTimer.textContent = `Time left: ${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
-        
-        // Update progress bar
-        const progressPercent = (seconds / 60) * 100;
-        chatProgress.style.width = `${progressPercent}%`;
-        
-        // Add AI messages periodically
-        if (seconds % 8 === 0) {
-          addBotMessage();
-        }
-        
-        if (seconds <= 0) {
-          clearInterval(chatInterval);
-          startVoting();
-        }
-      }, 1000);
+    const initials = player.initials || player.name.substring(0, 2).toUpperCase();
+    
+    resultCard.innerHTML = `
+      <div class="avatar">${initials}</div>
+      <div class="player-name">${player.name}${gameState.currentPlayer && player.id === gameState.currentPlayer.id ? ' (You)' : ''}</div>
+      <div class="result-label ${player.type === 'bot' ? 'bot' : 'human'}">${player.type === 'bot' ? 'BOT' : 'HUMAN'}</div>
+      <div class="votes-count">${player.votes || 0} vote${(player.votes || 0) !== 1 ? 's' : ''}</div>
+    `;
+    
+    resultsGrid.appendChild(resultCard);
+  });
+  
+  // Show outcome at the top
+  const resultsTitle = document.querySelector('.results-title');
+  const resultsSubtitle = document.querySelector('.voting-subtitle');
+  
+  if (correctIdentification) {
+    resultsTitle.textContent = "The Bot Was Found!";
+    resultsSubtitle.textContent = `${mostVotedPlayer.name} received the most votes and was indeed a bot. Humans win!`;
+    
+    // Update stats for human win
+    if (gameState.currentPlayer && gameState.currentPlayer.type === 'human') {
+      gameState.userStats.gamesWon++;
+      gameState.userStats.totalEarnings += 20; // Example payout
+    }
+  } else {
+    resultsTitle.textContent = "The Bot Got Away!";
+    
+    if (actualBots.length > 0) {
+      resultsSubtitle.textContent = `${mostVotedPlayer.name} was voted as the bot, but the real bot was ${actualBots[0].name}. Bot wins!`;
+    } else {
+      resultsSubtitle.textContent = `${mostVotedPlayer.name} was voted as the bot, but there was no bot in this game! Bot creator wins!`;
     }
     
-    function initializeChat() {
-      const chatMessages = document.getElementById('chatMessages');
-      chatMessages.innerHTML = '';
-      
-      // Add welcome message
-      const welcomeMessage = document.createElement('div');
-      welcomeMessage.classList.add('message');
-      welcomeMessage.innerHTML = `
-        <div class="message-avatar" style="background: linear-gradient(45deg, var(--accent), var(--primary))">SYS</div>
-        <div class="message-content">
-          <div class="message-sender">System</div>
-          <div class="message-text">Welcome to Game #4281! Chat with other players for 1 minute. One of you is an AI bot - can you figure out who?</div>
-        </div>
-      `;
-      
-      chatMessages.appendChild(welcomeMessage);
-      
-      // Add initial messages
-      setTimeout(() => {
-        addBotMessage();
-      }, 2000);
-      
-      setTimeout(() => {
-        addRandomHumanMessage();
-      }, 5000);
+    // Update stats for bot win
+    if (gameState.currentPlayer && gameState.currentPlayer.type === 'bot') {
+      gameState.userStats.gamesWon++;
+      gameState.userStats.totalEarnings += 20; // Example payout
     }
+  }
+}
+
+// Update player stats display
+function updatePlayerStats() {
+  // Update games played
+  gameState.userStats.gamesPlayed++;
+  
+  // Calculate win rate
+  const winRate = gameState.userStats.gamesPlayed > 0 
+    ? Math.round((gameState.userStats.gamesWon / gameState.userStats.gamesPlayed) * 100) 
+    : 0;
+  
+  // Update UI
+  document.getElementById('playerEarnings').textContent = gameState.userStats.totalEarnings;
+  document.getElementById('playerWinRate').textContent = winRate + '%';
+  document.getElementById('playerGamesPlayed').textContent = gameState.userStats.gamesPlayed;
+}
+
+// Prepare for the next game
+function prepareForNextGame() {
+  // Reset votes
+  gameState.players.forEach(player => {
+    player.votes = 0;
+  });
+  
+  gameState.selectedVote = null;
+  
+  // Set next game time
+  const now = new Date().getTime();
+  gameState.nextGameTime = now + 3 * 60 * 1000; // 3 minutes from now
+  
+  // Create new game ID
+  gameState.currentGame = "G" + Math.floor(Math.random() * 10000);
+  
+  // Game is now preparing for next round, not in progress
+  gameState.gameInProgress = false;
+}
+
+// Play another game
+function playAgain() {
+  // Go to waiting room for next game
+  startWaitingRoom();
+}
+
+// Show a specific view/screen
+function showView(viewId) {
+  // Hide all views
+  document.querySelectorAll('.view').forEach(view => {
+    view.classList.remove('active');
+  });
+  
+  // Show the requested view
+  document.getElementById(viewId).classList.add('active');
+  gameState.currentView = viewId;
+}
+
+// Modal management
+function openModal(type) {
+  if (type === 'human') {
+    document.getElementById('humanModal').classList.add('active');
+  } else {
+    document.getElementById('botModal').classList.add('active');
+  }
+}
+
+function closeModal(type) {
+  if (type === 'human') {
+    document.getElementById('humanModal').classList.remove('active');
+  } else {
+    document.getElementById('botModal').classList.remove('active');
+  }
+}
+
+// Toast notifications
+function showToast(type, message, duration = 3000) {
+  const toastContainer = document.getElementById('toastContainer');
+  
+  const toast = document.createElement('div');
+  toast.classList.add('toast', type);
+  toast.innerHTML = `
+    ${message}
+    <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+  `;
+  
+  toastContainer.appendChild(toast);
+  
+  // Show animation
+  setTimeout(() => {
+    toast.classList.add('show');
+  }, 10);
+  
+  // Auto remove
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  }, duration);
+}
+
+// Add a debug reset function
+function resetServer() {
+  if (gameState.connected && gameState.socket) {
+    console.log("Sending reset request to server");
+    sendToServer('reset', {});
     
-    function addBotMessage() {
-      const botPlayer = gameState.players.find(p => p.isBot && p.id !== gameState.currentPlayer?.id);
-      if (!botPlayer) return;
-      
-      const randomMessage = gameState.botMessages[Math.floor(Math.random() * gameState.botMessages.length)];
-      addMessage(botPlayer, randomMessage);
+    // Clear local state as well
+    gameState.players = [];
+    updateAllPlayerLists();
+    updateGameCounters();
+    
+    // Show toast
+    showToast('info', 'Server has been reset', 2000);
+  } else {
+    showToast('error', 'Not connected to server', 2000);
+  }
+}
+
+// Clean up when leaving
+window.addEventListener('beforeunload', function() {
+  // Send a message to server that we're leaving
+  if (gameState.connected && gameState.socket && gameState.currentPlayer) {
+    try {
+      sendToServer('playerLeft', { playerId: gameState.currentPlayer.id });
+    } catch (e) {
+      console.error("Error sending playerLeft message:", e);
     }
-    
-    function addRandomHumanMessage() {
-      const humanPlayers = gameState.players.filter(p => !p.isBot && p.id !== gameState.currentPlayer?.id);
-      if (humanPlayers.length === 0) return;
-      
-      const randomPlayer = humanPlayers[Math.floor(Math.random() * humanPlayers.length)];
-      const randomMessage = gameState.humanMessages[Math.floor(Math.random() * gameState.humanMessages.length)];
-      
-      addMessage(randomPlayer, randomMessage);
-    }
-    
-    function addMessage(player, text) {
-      const chatMessages = document.getElementById('chatMessages');
-      const messageElement = document.createElement('div');
-      messageElement.classList.add('message');
-      
-      messageElement.innerHTML = `
-        <div class="message-avatar" style="background: ${player.id === gameState.currentPlayer?.id ? 'linear-gradient(45deg, var(--accent), var(--primary))' : 'linear-gradient(45deg, var(--primary), var(--secondary))'}">${player.initials}</div>
-        <div class="message-content">
-          <div class="message-sender">${player.name}${player.id === gameState.currentPlayer?.id ? ' (You)' : ''}</div>
-          <div class="message-text">${text}</div>
-        </div>
-      `;
-      
-      chatMessages.appendChild(messageElement);
-      
-      // Scroll to bottom
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-    
-    function sendMessage() {
-      const messageInput = document.getElementById('messageInput');
-      const message = messageInput.value.trim();
-      
-      if (message) {
-        addMessage(gameState.currentPlayer, message);
-        messageInput.value = '';
-        
-        // Trigger a random response sometimes
-        if (Math.random() > 0.5) {
-          setTimeout(() => {
-            if (Math.random() > 0.5) {
-              addBotMessage();
-            } else {
-              addRandomHumanMessage();
-            }
-          }, 1000 + Math.random() * 2000);
-        }
-      }
-    }
-    
-    // Add event listener to input for Enter key
-    document.getElementById('messageInput').addEventListener('keypress', function(e) {
+  }
+  
+  // Clear any intervals
+  if (window.timerInterval) {
+    clearInterval(window.timerInterval);
+  }
+});
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  // Connect to server
+  connectToServer();
+  
+  // Add debug button
+  const debugButton = document.createElement('button');
+  debugButton.innerText = 'Reset Server';
+  debugButton.onclick = resetServer;
+  debugButton.style = 'position: fixed; top: 10px; left: 10px; background: #ff2a6d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;';
+  document.body.appendChild(debugButton);
+  
+  // Add event listeners for form submissions
+  const messageInput = document.getElementById('messageInput');
+  if (messageInput) {
+    messageInput.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
         sendMessage();
       }
     });
-    
-    function startVoting() {
-      showView('votingView');
-      populateVotingPlayers();
-      
-      // Set up countdown
-      let seconds = 10;
-      const votingTimer = document.getElementById('votingTimer');
-      const votingProgress = document.getElementById('votingProgress');
-      
-      votingInterval = setInterval(() => {
-        seconds--;
-        votingTimer.textContent = `Time left: 00:${String(seconds).padStart(2, '0')}`;
-        
-        // Update progress bar
-        const progressPercent = (seconds / 10) * 100;
-        votingProgress.style.width = `${progressPercent}%`;
-        
-        if (seconds <= 0) {
-          clearInterval(votingInterval);
-          showResults();
-        }
-      }, 1000);
-    }
-    
-    function populateVotingPlayers() {
-      const votingPlayers = document.getElementById('votingPlayers');
-      votingPlayers.innerHTML = '';
-      
-      gameState.players.forEach(player => {
-        // Don't let players vote for themselves
-        if (player.id === gameState.currentPlayer?.id) return;
-        
-        const playerCard = document.createElement('div');
-        playerCard.classList.add('player-card');
-        
-        playerCard.innerHTML = `
-          <div class="avatar">${player.initials}</div>
-          <div class="player-name">${player.name}</div>
-          <button class="vote-btn" onclick="voteForPlayer(${player.id})">VOTE AS BOT</button>
-        `;
-        
-        votingPlayers.appendChild(playerCard);
-      });
-    }
-    
-    function voteForPlayer(playerId) {
-      // Clear previous selection
-      document.querySelectorAll('.vote-btn').forEach(btn => {
-        btn.classList.remove('selected');
-      });
-      
-      // Select new button
-      const buttons = document.querySelectorAll('.vote-btn');
-      for (let i = 0; i < buttons.length; i++) {
-        if (buttons[i].onclick.toString().includes(`voteForPlayer(${playerId})`)) {
-          buttons[i].classList.add('selected');
-          break;
-        }
-      }
-      
-      // Update game state
-      gameState.selectedVote = playerId;
-      
-      // Add vote to player
-      const player = gameState.players.find(p => p.id === playerId);
-      if (player) {
-        player.votes++;
-      }
-    }
-    
-    function showResults() {
-      showView('resultsView');
-      
-      // Simulate other player votes
-      simulateVotes();
-      
-      // Display results
-      displayResults();
-    }
-    
-    function simulateVotes() {
-      // Clear previous votes except the player's vote
-      gameState.players.forEach(player => {
-        if (player.id !== gameState.selectedVote) {
-          player.votes = 0;
-        }
-      });
-      
-      // Each AI player votes randomly, but with higher chance to vote for humans
-      gameState.players.forEach(voter => {
-        // Skip the current player since they already voted
-        if (voter.id === gameState.currentPlayer?.id) return;
-        
-        const candidates = gameState.players.filter(p => p.id !== voter.id);
-        let votedPlayer;
-        
-        if (Math.random() < 0.6) {
-          // Try to vote for a human player (simulating some intelligence)
-          const humanCandidates = candidates.filter(p => !p.isBot);
-          if (humanCandidates.length > 0) {
-            votedPlayer = humanCandidates[Math.floor(Math.random() * humanCandidates.length)];
-          }
-        }
-        
-        // If no vote yet, vote randomly
-        if (!votedPlayer) {
-          votedPlayer = candidates[Math.floor(Math.random() * candidates.length)];
-        }
-        
-        votedPlayer.votes++;
-      });
-    }
-    
-    function displayResults() {
-      const resultsGrid = document.getElementById('resultsGrid');
-      resultsGrid.innerHTML = '';
-      
-      // Find player with most votes (the "winner")
-      const sortedPlayers = [...gameState.players].sort((a, b) => b.votes - a.votes);
-      const winner = sortedPlayers[0];
-      
-      // Check if the real bot was identified
-      const realBot = gameState.players.find(p => p.isBot && p.id !== gameState.currentPlayer?.id);
-      const botWasFound = realBot && winner.id === realBot.id;
-      
-      // Create results cards
-      gameState.players.forEach(player => {
-        const resultCard = document.createElement('div');
-        resultCard.classList.add('result-card');
-        resultCard.classList.add(player.isBot ? 'bot' : 'human');
-        
-        resultCard.innerHTML = `
-          <div class="avatar">${player.initials}</div>
-          <div class="player-name">${player.name}${player.id === gameState.currentPlayer?.id ? ' (You)' : ''}</div>
-          <div class="result-label ${player.isBot ? 'bot' : 'human'}">${player.isBot ? 'BOT' : 'HUMAN'}</div>
-          <div class="votes-count">${player.votes} vote${player.votes !== 1 ? 's' : ''}</div>
-        `;
-        
-        resultsGrid.appendChild(resultCard);
-      });
-      
-      // Show game outcome at the top
-      const resultsTitle = document.querySelector('.results-title');
-      const resultsSubtitle = document.querySelector('.voting-subtitle');
-      
-      if (botWasFound) {
-        resultsTitle.textContent = "The Bot Was Found!";
-        resultsSubtitle.textContent = `${realBot.name} received the most votes. Humans win!`;
-      } else {
-        resultsTitle.textContent = "The Bot Got Away!";
-        resultsSubtitle.textContent = `${winner.name} was voted as the bot, but the real bot was ${realBot.name}. Bot wins!`;
-      }
-    }
-    
-    function resetGame() {
-      // Clear all intervals
-      clearInterval(waitingInterval);
-      clearInterval(chatInterval);
-      clearInterval(votingInterval);
-      
-      // Reset game state
-      gameState.players.forEach(player => {
-        player.votes = 0;
-      });
-      gameState.selectedVote = null;
-      
-      // Return to join view
-      showView('joinView');
-    }
-    
-    // Event listeners for enter key on input fields
-    document.getElementById('username').addEventListener('keypress', function(e) {
+  }
+  
+  const usernameInput = document.getElementById('username');
+  if (usernameInput) {
+    usernameInput.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
         joinGame('human');
       }
     });
-    
-    document.getElementById('botname').addEventListener('keypress', function(e) {
+  }
+  
+  const botnameInput = document.getElementById('botname');
+  if (botnameInput) {
+    botnameInput.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
         joinGame('bot');
       }
     });
-  </script>
-</body>
+  }
+  
+  // Start timer updates
+  startTimerUpdates();
+});
+    </script>
+   </body>
 </html>
