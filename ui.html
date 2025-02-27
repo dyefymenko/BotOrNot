@@ -1443,16 +1443,6 @@ function startGame() {
       }
     }
     
-    // Add random human messages occasionally
-    if (seconds % 15 === 3) {
-      const humanPlayers = gameState.players.filter(p => p.type === 'human' && (!gameState.currentPlayer || p.id !== gameState.currentPlayer.id));
-      
-      if (humanPlayers.length > 0) {
-        const randomPlayer = humanPlayers[Math.floor(Math.random() * humanPlayers.length)];
-        addRandomHumanMessage(randomPlayer);
-      }
-    }
-    
     if (seconds <= 0) {
       clearInterval(chatInterval);
       startVoting();
