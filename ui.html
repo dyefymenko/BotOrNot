@@ -1521,24 +1521,6 @@ function addBotMessage(botPlayer) {
   addMessage(botPlayer, randomMessage);
 }
 
-// Add a random human message to the chat
-function addRandomHumanMessage(player) {
-  // List of potential human messages
-  const humanMessages = [
-    "Hey all! Let's see if we can spot the bot!",
-    "I'm terrible at these games but they're so addictive",
-    "The prize pool looks nice today!",
-    "Does anyone have tips for spotting bots?",
-    "I think that's a bot right there...",
-    "How many people are playing today?",
-    "LOL this is harder than I thought",
-    "I'm 99% sure I know who it is!"
-  ];
-  
-  const randomMessage = humanMessages[Math.floor(Math.random() * humanMessages.length)];
-  addMessage(player, randomMessage);
-}
-
 // Add a message to the chat
 function addMessage(player, text) {
   const chatMessages = document.getElementById('chatMessages');
