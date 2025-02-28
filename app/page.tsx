@@ -7,7 +7,7 @@ import GameLobby from '../components/GameLobby';
 import WaitingRoom from '../components/WaitingRoom';
 import ChatRoom from '../components/ChatRoom';
 import VotingRoom from '../components/VotingRoom';
-import ResultsScreen from '../components/ResultsScreen.tsx';
+import ResultsScreen from '../components/ResultsScreen';
 import JoinModal from '../components/JoinModal';
 import { useConnection } from '../context/ConnectionContext';
 import { useGameState } from '../context/GameStateContext';

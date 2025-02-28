@@ -27,11 +27,14 @@ export default function ChatRoom() {
   const [timeLeft, setTimeLeft] = useState(60); // 60 seconds game duration
   const [progress, setProgress] = useState(100); // Countdown progress bar
   
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Replace messagesEndRef with chatContainerRef
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   
-  // Scroll to bottom when messages change
+  // Fix scrolling to only scroll the chat container
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [messages]);
   
   // Countdown timer
@@ -130,25 +133,32 @@ export default function ChatRoom() {
   
   return (
     <div className="w-full">
-      <div className="bg-gray-800/60 rounded-xl p-6 border border-purple-600/30 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl">Game #{currentGameId} Chat Room</h3>
-          <div className="text-xl font-bold text-yellow-400">Time left: {formatTime(timeLeft)}</div>
+      <div className="bg-gray-900 rounded-2xl p-8 shadow-lg border border-indigo-500/30 mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+          <h3 className="text-xl font-bold text-white">Game <span className="text-indigo-400">#{currentGameId}</span> Chat Room</h3>
+          <div className="bg-gradient-to-r from-violet-900 to-indigo-900 rounded-xl px-4 py-2 text-white shadow-md border border-violet-400/30">
+            <div className="text-sm uppercase tracking-wider text-white">Time left</div>
+            <div className="text-xl font-bold text-white">{formatTime(timeLeft)}</div>
+          </div>
         </div>
         
-        <div className="w-full bg-gray-700 rounded-full h-2.5 mb-4">
+        <div className="w-full bg-gray-800 rounded-full h-3 mb-6 border border-indigo-900/50">
           <div 
-            className="bg-gradient-to-r from-purple-600 to-blue-400 h-2.5 rounded-full transition-all duration-1000" 
+            className="bg-gradient-to-r from-indigo-600 to-cyan-500 h-3 rounded-full transition-all duration-1000" 
             style={{ width: `${progress}%` }}
           ></div>
         </div>
         
-        <div className="bg-gray-900/50 rounded-lg h-96 p-4 mb-4 overflow-y-auto">
+        {/* Updated chat container with ref */}
+        <div 
+          ref={chatContainerRef}
+          className="bg-gray-800 text-white rounded-xl h-96 p-4 mb-6 overflow-y-auto border border-indigo-900/50 shadow-inner"
+        >
           {messages.map(renderMessage)}
-          <div ref={messagesEndRef} />
+          {/* Removed messagesEndRef div */}
         </div>
         
-        <div className="flex space-x-2">
+        <div className="flex space-x-3">
           <input
             type="text"
             value={messageText}
@@ -160,31 +170,31 @@ export default function ChatRoom() {
                 : "Type your message here..."
             }
             disabled={aiControlled}
-            className="flex-1 bg-gray-700/50 border border-white/10 rounded-full px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="flex-1 bg-gray-800 text-white border border-indigo-800/50 rounded-full px-5 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
           <button
             onClick={sendMessage}
             disabled={aiControlled}
-            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-3 px-8 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
           >
             Send
           </button>
         </div>
         
         {aiControlled && (
-          <div className="mt-4 text-center text-pink-500">
-            You have been selected as the AI-controlled player for this round. You cannot send messages.
+          <div className="mt-4 text-center bg-indigo-900/30 border border-indigo-700/50 rounded-lg p-3 text-white">
+            <span className="font-medium">You've been selected as the AI-controlled player for this round.</span> You cannot send messages.
           </div>
         )}
       </div>
       
-      <div className="text-center mb-6">
-        <p className="text-lg">Chat with other players! Can you identify who&apos;s human and who&apos;s a bot?</p>
+      <div className="text-center mb-6 bg-indigo-900/20 rounded-xl p-4 border border-indigo-700/30">
+        <p className="text-lg text-white">Chat with other players! Can you identify who&apos;s human and who&apos;s a bot?</p>
       </div>
       
-      <div className="bg-gray-800/60 rounded-xl p-6 border border-purple-600/30">
-        <h3 className="text-xl mb-4">Current Players</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <div className="bg-gray-900 rounded-2xl p-8 shadow-lg border border-indigo-500/30">
+        <h3 className="text-xl font-bold text-white mb-6">Current Players</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
           {players.map((player) => (
             <PlayerCard key={player.id} player={player} />
           ))}

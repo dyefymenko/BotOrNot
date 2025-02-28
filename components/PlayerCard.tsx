@@ -76,7 +76,7 @@ export default function PlayerCard({
         {initials}
       </div>
       
-      <div className="font-bold mb-1">
+      <div className="font-bold mb-1 text-white">
         {player.name}
         {isCurrentUser && <span className="ml-1 text-xs text-pink-500">(You)</span>}
       </div>
