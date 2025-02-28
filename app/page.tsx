@@ -1,127 +1,91 @@
 'use client';
 
-import {
-  ConnectWallet,
-  Wallet,
-  WalletDropdown,
-  WalletDropdownLink,
-  WalletDropdownDisconnect,
-} from '@coinbase/onchainkit/wallet';
-import {
-  Address,
-  Avatar,
-  Name,
-  Identity,
-  EthBalance,
-} from '@coinbase/onchainkit/identity';
-import ArrowSvg from './svg/ArrowSvg';
-import ImageSvg from './svg/Image';
-import OnchainkitSvg from './svg/OnchainKit';
+import { useState, useEffect } from 'react';
+import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
+import { Address, Avatar, Name, Identity, EthBalance } from '@coinbase/onchainkit/identity';
+import GameLobby from '../components/GameLobby';
+import WaitingRoom from '../components/WaitingRoom';
+import ChatRoom from '../components/ChatRoom';
+import VotingRoom from '../components/VotingRoom';
+import ResultsScreen from '../components/ResultsScreen.tsx';
+import JoinModal from '../components/JoinModal';
+import { useConnection } from '../context/ConnectionContext';
+import { useGameState } from '../context/GameStateContext';
+import ConnectionStatus from '../components/ConnectionStatus';
+import Toast from '../components/Toast';
 
-const components = [
-  {
-    name: 'Transaction',
-    url: 'https://onchainkit.xyz/transaction/transaction',
-  },
-  { name: 'Swap', url: 'https://onchainkit.xyz/swap/swap' },
-  { name: 'Checkout', url: 'https://onchainkit.xyz/checkout/checkout' },
-  { name: 'Wallet', url: 'https://onchainkit.xyz/wallet/wallet' },
-  { name: 'Identity', url: 'https://onchainkit.xyz/identity/identity' },
-];
+export default function Home() {
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const { connectionStatus } = useConnection();
+  const { currentView, toasts, removeToast } = useGameState();
 
-const templates = [
-  { name: 'NFT', url: 'https://github.com/coinbase/onchain-app-template' },
-  { name: 'Commerce', url: 'https://github.com/coinbase/onchain-commerce-template'},
-  { name: 'Fund', url: 'https://github.com/fakepixels/fund-component' },
-];
-
-export default function App() {
   return (
     <div className="flex flex-col min-h-screen font-sans dark:bg-background dark:text-white bg-white text-black">
+      <ConnectionStatus />
+      
+      {/* Toast notifications */}
+      <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2">
+        {toasts.map((toast) => (
+          <Toast 
+            key={toast.id} 
+            type={toast.type} 
+            message={toast.message} 
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
+      </div>
+      
       <header className="pt-4 pr-4">
         <div className="flex justify-end">
           <div className="wallet-container">
             <Wallet>
-                <ConnectWallet>
-                  <Avatar className="h-6 w-6" />
+              <ConnectWallet>
+                <Avatar className="h-6 w-6" />
+                <Name />
+              </ConnectWallet>
+              <WalletDropdown>
+                <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+                  <Avatar />
                   <Name />
-                </ConnectWallet>
-                <WalletDropdown>
-                  <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                    <Avatar />
-                    <Name />
-                    <Address />
-                    <EthBalance />
-                  </Identity>
-                  <WalletDropdownDisconnect />
-                </WalletDropdown>
-              </Wallet>
+                  <Address />
+                  <EthBalance />
+                </Identity>
+                <WalletDropdownDisconnect />
+              </WalletDropdown>
+            </Wallet>
           </div>
         </div>
       </header>
 
-      <main className="flex-grow flex items-center justify-center">
+      <main className="flex-grow flex flex-col items-center">
         <div className="max-w-4xl w-full p-4">
-          <div className="w-1/3 mx-auto mb-6">
-            <ImageSvg />
-          </div>
-          <div className="flex justify-center mb-6">
-            <a target="_blank" rel="_template" href="https://onchainkit.xyz">
-              <OnchainkitSvg className="dark:text-white text-black" />
-            </a>
-          </div>
-          <p className="text-center mb-6">
-            Get started by editing
-            <code className="p-1 ml-1 rounded dark:bg-gray-800 bg-gray-200">app/page.tsx</code>.
-          </p>
-          <div className="flex flex-col items-center">
-            <div className="max-w-2xl w-full">
-              <div className="flex flex-col md:flex-row justify-between mt-4">
-                <div className="md:w-1/2 mb-4 md:mb-0 flex flex-col items-center">
-                  <p className="font-semibold mb-2 text-center">
-                    Explore components
-                  </p>
-                  <ul className="list-disc pl-5 space-y-2 inline-block text-left">
-                    {components.map((component, index) => (
-                      <li key={index}>
-                        <a
-                          href={component.url}
-                          className="hover:underline inline-flex items-center dark:text-white text-black"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {component.name}
-                          <ArrowSvg />
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="md:w-1/2 flex flex-col items-center">
-                  <p className="font-semibold mb-2 text-center">
-                    Explore templates
-                  </p>
-                  <ul className="list-disc pl-5 space-y-2 inline-block text-left">
-                    {templates.map((template, index) => (
-                      <li key={index}>
-                        <a
-                          href={template.url}
-                          className="hover:underline inline-flex items-center dark:text-white text-black"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {template.name}
-                          <ArrowSvg/>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
+          <header className="text-center mb-10">
+            <h1 className="text-5xl font-extrabold mb-2 bg-gradient-to-r from-purple-600 to-blue-400 bg-clip-text text-transparent">
+              BOT or NOT?
+            </h1>
+            <p className="text-lg text-blue-400 opacity-80">
+              A social deduction game of trust and deception
+            </p>
+          </header>
+          
+          {/* Game Views */}
+          {currentView === 'join' && (
+            <GameLobby onJoinClick={() => setShowJoinModal(true)} />
+          )}
+          
+          {currentView === 'waiting' && <WaitingRoom />}
+          {currentView === 'chat' && <ChatRoom />}
+          {currentView === 'voting' && <VotingRoom />}
+          {currentView === 'results' && <ResultsScreen />}
+          
+          {/* Join Modal */}
+          <JoinModal isOpen={showJoinModal} onClose={() => setShowJoinModal(false)} />
         </div>
       </main>
+      
+      <footer className="text-center py-4 text-sm opacity-70">
+        <p>© 2025 BOT or NOT? — Play to win, trust no one.</p>
+      </footer>
     </div>
   );
 }
