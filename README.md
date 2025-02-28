@@ -1,58 +1,120 @@
-# BotOrNot
-Turing test inspired game in a modern setting
+# BOT or NOT? Game
 
-## Overview
-BotOrNot is a multiplayer chat game where players try to identify which participants are AI bots. Human players connect to a chat room and interact, while some participants are actually AI-powered bots trying to pass as human.
+A social deduction game where players try to identify which participant is controlled by an AI.
 
-## Features
-- Real-time WebSocket communication
-- Support for both JavaScript and Python backends
-- OpenAI integration for intelligent bot responses
-- Multi-user chat interface
-- Voting system to identify bots
+## Project Overview
 
-## Setup
+In this game:
+1. Users submit a prompt for the AI agent.
+2. Users join by paying 10 USDC.
+3. One random player is selected to have an AI agent chat on their behalf.
+4. Players chat for 1 minute, trying to determine who is the AI.
+5. A 10-second voting period follows where players vote on who they think is the AI.
+6. Players who correctly identify the AI split the prize pool.
 
-### JavaScript Backend (Original)
-1. Install dependencies:
+## Project Structure
+
+The project consists of two main parts:
+1. Next.js frontend with OnchainKit for wallet integration
+2. Python WebSocket backend using OpenAI for AI responses
+
+## Setup and Installation
+
+### Backend Setup
+
+1. Navigate to the `server` directory:
+```bash
+cd server
+```
+
+2. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. Install dependencies:
+```bash
+pip install websockets openai python-dotenv
+```
+
+4. Create a `.env` file in the server directory:
+```
+OPENAI_API_KEY=your_openai_api_key
+```
+
+5. Start the WebSocket server:
+```bash
+python game_server.py
+```
+
+### Frontend Setup
+
+1. Create a `.env.local` file in the root directory with your configuration:
+```
+NEXT_PUBLIC_ONCHAINKIT_API_KEY=your_onchainkit_api_key
+NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME="BOT or NOT?"
+NEXT_PUBLIC_WEBSOCKET_URL=ws://localhost:8765
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Run the development server:
+```bash
+npm run dev
+```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Game Flow
+
+1. **Join Game View**:
+   - Players connect their wallet
+   - Submit their name and a prompt for the AI agent
+   - Pay 10 USDC to join (currently simulated)
+
+2. **Waiting Room**:
+   - Players wait for the game to start (30-second countdown)
+   - Display of all players waiting
+
+3. **Chat Room**:
+   - One player is randomly selected to be controlled by AI
+   - AI-controlled player cannot send messages, but the AI responds automatically
+   - Everyone chats for 1 minute
+
+4. **Voting Phase**:
+   - Players vote on who they think is the AI
+   - 10-second voting period
+
+5. **Results Screen**:
+   - Reveals who was the AI
+   - Shows vote results and winners
+   - Option to play again
+
+## Technologies Used
+
+- **Frontend**: Next.js, React, Tailwind CSS, OnchainKit
+- **Backend**: Python, WebSockets, OpenAI API
+- **Blockchain Integration**: Base chain via OnchainKit
+
+## Production Deployment
+
+For production deployment:
+
+1. Deploy the WebSocket server to a secure environment:
+   - Ensure proper SSL/TLS setup for secure WebSocket connections (wss://)
+   - Update environment variables with production URLs
+
+2. Deploy the Next.js frontend using Vercel or similar:
+   ```bash
+   npm run build
    ```
-   npm install
-   ```
 
-2. Start the server:
-   ```
-   node server.js
-   ```
+3. Configure environment variables in your hosting provider.
 
-### Python Backend (with OpenAI Integration)
-1. Install Python dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
+## License
 
-2. Create a `.env` file with your OpenAI API key:
-   ```
-   cp .env.example .env
-   ```
-   Then edit the `.env` file to add your OpenAI API key.
-
-3. Start the Python server:
-   ```
-   python server.py
-   ```
-
-### Running the UI
-- Open `ui.html` directly in your browser
-- You can open multiple instances to simulate different players
-
-## How to Play
-1. Join as a human player or create a bot agent
-2. Chat with other players for 1 minute
-3. Try to identify which participants are AI bots
-4. Vote on who you think is a bot
-5. See the results to find out if you were correct
-
-## Technical Details
-- Server: Node.js (JavaScript) or Python with WebSockets
-- Frontend: Plain HTML/CSS/JavaScript
-- AI Integration: OpenAI API (with Python backend)
+MIT
