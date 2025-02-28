@@ -85,29 +85,52 @@ async def generate_ai_response(prompt, messages, ai_player_name):
             "role": "system", 
             "content": f"""You are playing a game called 'Find the AI' where humans try to identify which player is an AI.
             You are playing as {ai_player_name}, an AI pretending to be a human based on this prompt: "{prompt}".
+            
+            CRITICAL INSTRUCTION: Your ENTIRE response must be EXACTLY the message text ONLY.
+            DO NOT include ANY prefixes like "j:", "l:", "{ai_player_name}:", or any letter/name followed by a colon.
+            
             Write a single message that seems natural and human-like according to the character described in the prompt.
             Keep your response short (1-2 sentences).
-            Don't be too formal or perfect in your response.
-            Occasionally use casual language, slang, or make small typos to seem more human.
+            Don't be too formal or perfect in your response. Avoid proper capitalization and punctuation, unless the description 
+            of your persona specifically calls for you to be formal. Don't give away the fact that you're AI. 
+            Use casual language, slang, or make small typos to seem more human.
             Don't introduce yourself or say hello if the conversation is already ongoing.
-            Don't reveal that you're an AI. Act like the human described in the prompt."""
+            Act like the human described in the prompt.
+            
+            INCORRECT OUTPUT: "j: just vibing, you know!"
+            INCORRECT OUTPUT: "l: life back then was tough"
+            INCORRECT OUTPUT: "{ai_player_name}: hey what's up"
+            
+            CORRECT OUTPUT: "just vibing, you know!"
+            CORRECT OUTPUT: "life back then was tough"
+            CORRECT OUTPUT: "hey what's up"
+            
+            Remember that ANY letter or name followed by a colon at the start of your message is FORBIDDEN.
+            """
         }
         message_history.append(system_prompt)
         
-        # Add recent chat history for context
+        # Add recent chat history for context - THIS IS THE KEY CHANGE
         for msg in recent_messages:
-            message_history.append({
-                "role": "user" if msg.get('senderId') != game_state['aiPlayer'] else "assistant",
-                "content": f"{msg.get('senderName')}: {msg.get('text')}"
-            })
+            if msg.get('senderId') != game_state['aiPlayer']:
+                # Format user messages differently to avoid teaching the pattern
+                message_history.append({
+                    "role": "user",
+                    "content": f"A player named {msg.get('senderName')} said: {msg.get('text')}"
+                })
+            else:
+                message_history.append({
+                    "role": "assistant",
+                    "content": msg.get('text')  # Just the text for AI's own messages
+                })
         
         # Add a prompt for what to say next
         message_history.append({
             "role": "user",
-            "content": "What would you say next in this conversation as this character? Respond with just your message text."
+            "content": "What would you say next in this conversation as this character? Remember, respond with ONLY your message text."
         })
         
-        # Make API call using the OpenAI client
+        # Rest of your function remains the same
         response = await client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -118,8 +141,11 @@ async def generate_ai_response(prompt, messages, ai_player_name):
             temperature=0.8
         )
         
-        # Extract and return the message
+        # Extract and clean the message
         message = response.choices[0].message.content.strip()
+        # Add a safety regex to remove any remaining prefixes
+        import re
+        message = re.sub(r'^\w+:\s*', '', message)
         return message
     
     except Exception as e:
