@@ -3,13 +3,12 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title BotOrNotGame
  * @dev A smart contract for a game where players try to identify an AI agent
  */
-contract BotOrNotGame is Ownable, ReentrancyGuard {
+contract BotOrNotGame is Ownable {
     // USDC token contract
     IERC20 public usdcToken;
     
@@ -93,7 +92,7 @@ contract BotOrNotGame is Ownable, ReentrancyGuard {
      * @dev Allows a player to join a game by paying the entry fee
      * @param gameId The ID of the game to join
      */
-    function joinGame(string memory gameId) external nonReentrant {
+    function joinGame(string memory gameId) external {
         Game storage game = games[gameId];
         
         require(game.state == GameState.WAITING, "Game not in waiting state");
@@ -192,21 +191,25 @@ contract BotOrNotGame is Ownable, ReentrancyGuard {
         address mostVotedPlayer = address(0);
         uint256 highestVotes = 0;
         
-        // Create a temporary mapping for vote counts
-        mapping(address => uint256) storage voteCounts;
-        
+        // Use a memory mapping instead by tracking votes in an array
         for (uint i = 0; i < game.players.length; i++) {
-            address player = game.players[i];
-            if (player == game.aiPlayer) continue; // Skip AI player
+            address playerToVoteFor = game.players[i];
+            uint256 voteCount = 0;
             
-            address votedFor = game.votes[player];
-            if (votedFor != address(0)) {
-                voteCounts[votedFor]++;
+            // Count votes for this player
+            for (uint j = 0; j < game.players.length; j++) {
+                address voter = game.players[j];
+                if (voter == game.aiPlayer) continue; // Skip AI player
                 
-                if (voteCounts[votedFor] > highestVotes) {
-                    highestVotes = voteCounts[votedFor];
-                    mostVotedPlayer = votedFor;
+                if (game.votes[voter] == playerToVoteFor) {
+                    voteCount++;
                 }
+            }
+            
+            // Check if this player has the most votes so far
+            if (voteCount > highestVotes) {
+                highestVotes = voteCount;
+                mostVotedPlayer = playerToVoteFor;
             }
         }
         
@@ -223,7 +226,7 @@ contract BotOrNotGame is Ownable, ReentrancyGuard {
      * @dev Distributes rewards to winners
      * @param gameId The ID of the completed game
      */
-    function claimRewards(string memory gameId) external nonReentrant {
+    function claimRewards(string memory gameId) external {
         Game storage game = games[gameId];
         
         require(game.state == GameState.COMPLETED, "Game not completed");
