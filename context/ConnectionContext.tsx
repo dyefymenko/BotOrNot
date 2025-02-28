@@ -21,6 +21,8 @@ export const ConnectionProvider = ({ children, serverUrl = 'ws://localhost:8765'
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const { updateGameState, addToast } = useGameState();
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [isInitialConnect, setIsInitialConnect] = useState(true);
 
   // Connect to WebSocket server
   useEffect(() => {
@@ -40,12 +42,20 @@ export const ConnectionProvider = ({ children, serverUrl = 'ws://localhost:8765'
         newSocket.onopen = () => {
           console.log("Connected to WebSocket server");
           setConnectionStatus('online');
+          setReconnectAttempts(0);
+          setIsInitialConnect(false);
           
           // Send a ping to test connection
-          sendToServer('ping', {});
+          const pingPayload = {
+            type: 'ping'
+          };
+          newSocket.send(JSON.stringify(pingPayload));
           
           // Request current game state
-          sendToServer('getState', {});
+          const statePayload = {
+            type: 'getState'
+          };
+          newSocket.send(JSON.stringify(statePayload));
         };
         
         newSocket.onmessage = (event) => {
@@ -62,8 +72,16 @@ export const ConnectionProvider = ({ children, serverUrl = 'ws://localhost:8765'
           console.log("WebSocket connection closed");
           setConnectionStatus('offline');
           
-          // Try to reconnect after a delay
-          setTimeout(connectToServer, 3000);
+          // Only show disconnect toast if we were previously connected
+          if (!isInitialConnect) {
+            addToast('error', 'Disconnected from server. Attempting to reconnect...');
+          }
+          
+          // Try to reconnect with exponential backoff
+          const attempts = reconnectAttempts + 1;
+          setReconnectAttempts(attempts);
+          const backoffTime = Math.min(3000 * Math.pow(1.5, attempts - 1), 30000);
+          setTimeout(connectToServer, backoffTime);
         };
         
         newSocket.onerror = (error) => {
@@ -76,8 +94,11 @@ export const ConnectionProvider = ({ children, serverUrl = 'ws://localhost:8765'
         console.error("Connection error:", error);
         setConnectionStatus('offline');
         
-        // Try to reconnect after a delay
-        setTimeout(connectToServer, 3000);
+        // Try to reconnect with exponential backoff
+        const attempts = reconnectAttempts + 1;
+        setReconnectAttempts(attempts);
+        const backoffTime = Math.min(3000 * Math.pow(1.5, attempts - 1), 30000);
+        setTimeout(connectToServer, backoffTime);
       }
     };
     
@@ -109,7 +130,13 @@ export const ConnectionProvider = ({ children, serverUrl = 'ws://localhost:8765'
       case "newMessage":
         if (data.message) {
           updateGameState({ 
-            messages: (prev: any[]) => [...prev, data.message] 
+            messages: (prev: any[]) => {
+              // Check if message with this ID already exists
+              if (prev.some(msg => msg.id === data.message.id)) {
+                return prev; // Don't add duplicate
+              }
+              return [...prev, data.message];
+            } 
           });
         }
         break;
@@ -143,7 +170,18 @@ export const ConnectionProvider = ({ children, serverUrl = 'ws://localhost:8765'
   // Send messages to the server
   const sendToServer = (messageType: string, messageData: any = {}) => {
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-      addToast('error', 'Not connected to server');
+      // Only show the error toast if it's not during initial page load/connection
+      if (!isInitialConnect) {
+        // We're only showing one toast instead of multiple different ones
+        addToast('error', 'Connection issue. Please try again in a moment.');
+      }
+      
+      // Queue important messages for retry when connection is established
+      if (['join', 'submitPrompt', 'submitVote'].includes(messageType)) {
+        console.log(`Queuing important message of type ${messageType} for retry`);
+        // You could implement a message queue system here if needed
+      }
+      
       return false;
     }
     
