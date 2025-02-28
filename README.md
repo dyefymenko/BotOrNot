@@ -1,58 +1,39 @@
-# BotOrNot
-Turing test inspired game in a modern setting
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-onchain`]().
 
-## Overview
-BotOrNot is a multiplayer chat game where players try to identify which participants are AI bots. Human players connect to a chat room and interact, while some participants are actually AI-powered bots trying to pass as human.
 
-## Features
-- Real-time WebSocket communication
-- Support for both JavaScript and Python backends
-- OpenAI integration for intelligent bot responses
-- Multi-user chat interface
-- Voting system to identify bots
+## Getting Started
 
-## Setup
+First, install dependencies:
 
-### JavaScript Backend (Original)
-1. Install dependencies:
-   ```
-   npm install
-   ```
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+# or
+bun install
+```
 
-2. Start the server:
-   ```
-   node server.js
-   ```
+Next, run the development server:
 
-### Python Backend (with OpenAI Integration)
-1. Install Python dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-2. Create a `.env` file with your OpenAI API key:
-   ```
-   cp .env.example .env
-   ```
-   Then edit the `.env` file to add your OpenAI API key.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-3. Start the Python server:
-   ```
-   python server.py
-   ```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-### Running the UI
-- Open `ui.html` directly in your browser
-- You can open multiple instances to simulate different players
 
-## How to Play
-1. Join as a human player or create a bot agent
-2. Chat with other players for 1 minute
-3. Try to identify which participants are AI bots
-4. Vote on who you think is a bot
-5. See the results to find out if you were correct
+## Learn More
 
-## Technical Details
-- Server: Node.js (JavaScript) or Python with WebSockets
-- Frontend: Plain HTML/CSS/JavaScript
-- AI Integration: OpenAI API (with Python backend)
+To learn more about OnchainKit, see our [documentation](https://onchainkit.xyz/getting-started).
+
+To learn more about Next.js, see the [Next.js documentation](https://nextjs.org/docs).
