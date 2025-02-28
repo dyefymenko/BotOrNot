@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useConnection } from '../context/ConnectionContext';
 import { useGameState } from '../context/GameStateContext';
+import { useAccount } from 'wagmi';
 
 interface JoinModalProps {
   isOpen: boolean;
@@ -12,10 +13,11 @@ interface JoinModalProps {
 export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
   const [username, setUsername] = useState('');
   const [promptText, setPromptText] = useState('');
-  const [wallet, setWallet] = useState('0x742d35Cc6634C0532925a3b844Bc454e4438f44e'); // Default wallet for demo
   
   const { sendToServer } = useConnection();
   const { addToast, updateGameState } = useGameState();
+
+  const { address } = useAccount();
   
   if (!isOpen) return null;
   
@@ -24,6 +26,7 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
       addToast('error', 'Please fill in all required fields');
       return;
     }
+
     
     // Submit the prompt first
     sendToServer('submitPrompt', { prompt: promptText });
@@ -35,7 +38,7 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
     const playerData = {
       id: playerId,
       name: username,
-      walletAddress: wallet,
+      walletAddress: address,
       initials: username.substring(0, 2).toUpperCase(),
       type: 'human'
     };
@@ -83,7 +86,7 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
           />
         </div>
         
-        <div className="mb-4">
+        <div className="mb-6">
           <label className="block text-white/80 mb-2">Your AI Agent Prompt (In case you're selected)</label>
           <input 
             type="text" 
@@ -91,17 +94,6 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
             placeholder="e.g., A witty 60-year-old history professor who loves puns"
             value={promptText}
             onChange={(e) => setPromptText(e.target.value)}
-          />
-        </div>
-        
-        <div className="mb-6">
-          <label className="block text-white/80 mb-2">Your Wallet Address</label>
-          <input 
-            type="text" 
-            className="w-full p-3 rounded-lg bg-gray-700/50 border border-white/20 text-white"
-            placeholder="0x..."
-            value={wallet}
-            onChange={(e) => setWallet(e.target.value)}
           />
         </div>
         
