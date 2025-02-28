@@ -505,6 +505,22 @@
     .play-again-btn {
       margin-top: 30px;
     }
+
+    .most-voted {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      background: var(--warning);
+      color: var(--dark);
+    }
+
+    .success-btn {
+      background: linear-gradient(90deg, var(--success), var(--secondary)) !important;
+    }
     
     /* Modal */
     .modal {
@@ -747,15 +763,9 @@
     <div id="joinView" class="view active">
       <div class="entry-options">
         <div class="option-card human-card">
-          <h2>JOIN AS HUMAN</h2>
-          <p>Enter the game as yourself. Chat naturally and try to identify which players are AI bots.</p>
-          <button class="btn" onclick="openModal('human')">JOIN GAME • 10 USDC</button>
-        </div>
-        
-        <div class="option-card bot-card">
-          <h2>CREATE BOT</h2>
-          <p>Program an AI agent to play on your behalf. Can your bot fool the human players?</p>
-          <button class="btn" onclick="openModal('bot')">CREATE BOT • 10 USDC</button>
+          <h2>JOIN GAME</h2>
+          <p>Enter the game and try to identify which player is controlled by an AI. One random player will have an AI agent chat on their behalf.</p>
+          <button class="btn" onclick="openModal('human')">JOIN GAME</button>
         </div>
       </div>
       
@@ -887,7 +897,7 @@
   <div class="modal" id="humanModal">
     <div class="modal-content">
       <button class="close-modal" onclick="closeModal('human')">×</button>
-      <h2>Join as Human</h2>
+      <h2>Join Game</h2>
       <form id="humanForm">
         <div class="input-group">
           <label for="username">Choose a Username</label>
@@ -895,36 +905,16 @@
         </div>
         
         <div class="input-group">
+          <label for="promptText">Your AI Agent Prompt (In case you're selected)</label>
+          <input type="text" id="promptText" placeholder="e.g., A witty 60-year-old history professor who loves puns" required>
+        </div>
+        
+        <div class="input-group">
           <label for="wallet">Your Wallet Address</label>
           <input type="text" id="wallet" placeholder="0x..." value="0x742d35Cc6634C0532925a3b844Bc454e4438f44e">
         </div>
         
-        <button type="button" class="submit-btn" onclick="joinGame('human')">JOIN GAME • PAY 10 USDC</button>
-      </form>
-    </div>
-  </div>
-  
-  <div class="modal" id="botModal">
-    <div class="modal-content">
-      <button class="close-modal" onclick="closeModal('bot')">×</button>
-      <h2>Create Your Bot</h2>
-      <form id="botForm">
-        <div class="input-group">
-          <label for="botname">Bot Name</label>
-          <input type="text" id="botname" placeholder="Your bot's display name" required>
-        </div>
-        
-        <div class="input-group">
-          <label for="instructions">Bot Instructions</label>
-          <input type="text" id="instructions" placeholder="How should your bot behave?">
-        </div>
-        
-        <div class="input-group">
-          <label for="walletBot">Your Wallet Address</label>
-          <input type="text" id="walletBot" placeholder="0x..." value="0x742d35Cc6634C0532925a3b844Bc454e4438f44e">
-        </div>
-        
-        <button type="button" class="submit-btn" onclick="joinGame('bot')">CREATE BOT • PAY 10 USDC</button>
+        <button type="button" class="submit-btn" onclick="joinGame('human')">JOIN GAME</button>
       </form>
     </div>
   </div>
@@ -950,7 +940,11 @@ const gameState = {
     gamesPlayed: 0,
     gamesWon: 0,
     totalEarnings: 0
-  }
+  },
+  aiControlled: false,  // Tracks if the current player is AI-controlled
+  submittedPrompt: null, // Tracks if the player submitted a prompt
+  votingOpen: false,     // Tracks if voting phase is active
+  gameResults: null,     // Stores the results of the game
 };
 
 // Connect to WebSocket server
@@ -1045,16 +1039,37 @@ function handleServerMessage(data) {
         if (Array.isArray(data.data.players)) {
           console.log(`Updating players from ${gameState.players.length} to ${data.data.players.length}`);
           gameState.players = data.data.players;
+          
+          // Check if current player is AI-controlled
+          if (gameState.currentPlayer) {
+            const currentPlayerData = gameState.players.find(p => p.id === gameState.currentPlayer.id);
+            gameState.aiControlled = currentPlayerData && currentPlayerData.isAI === true;
+          }
         }
         
         gameState.gameInProgress = data.data.gameInProgress;
         gameState.nextGameTime = data.data.nextGameTime;
         gameState.currentGame = data.data.currentGameId;
+        gameState.votingOpen = data.data.votingOpen;
+        gameState.gameResults = data.data.gameResults;
+        
+        // If voting is open, move to voting view
+        if (gameState.votingOpen && gameState.currentView !== 'votingView') {
+          startVoting();
+        }
+        
+        // If results are available and game is not in progress, show results
+        if (gameState.gameResults && !gameState.gameInProgress && gameState.currentView !== 'resultsView') {
+          showResults();
+        }
         
         // Update UI with new data
         updateAllPlayerLists();
         updateGameCounters();
         updateNextGameCountdown();
+        
+        // Update create game button
+        updateCreateGameButton();
       }
       break;
       
@@ -1299,35 +1314,21 @@ function updateNextGameCountdown() {
 
 // Join the game as a player
 function joinGame(type) {
-  let username;
-  let wallet;
-  let isBot = false;
+  const username = document.getElementById('username').value;
+  const wallet = document.getElementById('wallet').value;
+  const prompt = document.getElementById('promptText').value;
   
-  if (type === 'human') {
-    username = document.getElementById('username').value;
-    wallet = document.getElementById('wallet').value;
-    
-    if (!username || !wallet) {
-      showToast('error', 'Please fill in all fields');
-      return;
-    }
-    
-    closeModal('human');
-  } else {
-    username = document.getElementById('botname').value;
-    wallet = document.getElementById('walletBot').value;
-    const instructions = document.getElementById('instructions').value || '';
-    isBot = true;
-    
-    if (!username || !wallet) {
-      showToast('error', 'Please fill in all fields');
-      return;
-    }
-    
-    closeModal('bot');
+  if (!username || !wallet || !prompt) {
+    showToast('error', 'Please fill in all fields');
+    return;
   }
   
+  closeModal('human');
   showToast('info', 'Processing join request...', 1500);
+  
+  // Submit the prompt
+  sendToServer('submitPrompt', { prompt: prompt });
+  gameState.submittedPrompt = prompt;
   
   // Create player object
   const initials = username.substring(0, 2).toUpperCase();
@@ -1336,7 +1337,7 @@ function joinGame(type) {
     name: username,
     walletAddress: wallet,
     initials: initials,
-    type: isBot ? 'bot' : 'human',
+    type: 'human',
     votes: 0
   };
   
@@ -1344,6 +1345,12 @@ function joinGame(type) {
   if (sendToServer('joinGame', { player: gameState.currentPlayer })) {
     console.log("Join request sent successfully");
     showToast('success', 'Joined game successfully!');
+    
+    // If no game in progress, create one
+    if (!gameState.gameInProgress && gameState.nextGameTime > (new Date().getTime() + 25000)) {
+      console.log("No game in progress, creating a new one");
+      sendToServer('createGame', {});
+    }
     
     // Move to waiting room
     startWaitingRoom();
@@ -1416,11 +1423,27 @@ function startGame() {
   // Move to chat view
   showView('chatView');
   
-  // Show welcome message
-  addSystemMessage('Welcome to Game #' + gameState.currentGame + '! Chat with other players for 1 minute. One of you is an AI bot - can you figure out who?');
+  // Show notification if player is AI-controlled
+  if (gameState.aiControlled) {
+    addSystemMessage('You have been selected as the AI-controlled player for this round. You cannot send messages, and the AI will chat on your behalf.');
+    
+    // Disable chat input
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput) {
+      messageInput.disabled = true;
+      messageInput.placeholder = "You're the AI player this round. The AI is sending messages for you...";
+    }
+    
+    const sendBtn = document.querySelector('.send-btn');
+    if (sendBtn) {
+      sendBtn.disabled = true;
+    }
+  } else {
+    addSystemMessage('Welcome to Game #' + gameState.currentGame + '! Chat for 1 minute. One player is controlled by AI - can you figure out who?');
+  }
   
   // Set up countdown
-  let seconds = 60;
+  let seconds = 60; // Changed from longer time to exactly 1 minute
   const chatTimer = document.getElementById('chatTimer');
   const chatProgress = document.getElementById('chatProgress');
   
@@ -1432,26 +1455,21 @@ function startGame() {
     const progressPercent = (seconds / 60) * 100;
     chatProgress.style.width = `${progressPercent}%`;
     
-    // Add AI bot messages periodically
-    if (seconds % 8 === 0) {
-      // Find a bot in the game
-      const botsInGame = gameState.players.filter(p => p.type === 'bot' && (!gameState.currentPlayer || p.id !== gameState.currentPlayer.id));
-      
-      if (botsInGame.length > 0) {
-        const randomBot = botsInGame[Math.floor(Math.random() * botsInGame.length)];
-        addBotMessage(randomBot);
-      }
-    }
-    
     if (seconds <= 0) {
       clearInterval(chatInterval);
-      startVoting();
+      // No need to call startVoting() here - server will handle game state transitions
     }
   }, 1000);
 }
 
 // Send a chat message
 function sendMessage() {
+  // Don't allow AI-controlled player to send messages
+  if (gameState.aiControlled) {
+    showToast('error', 'As the AI-controlled player, you cannot send messages this round');
+    return;
+  }
+  
   const messageInput = document.getElementById('messageInput');
   const message = messageInput.value.trim();
   
@@ -1467,8 +1485,6 @@ function sendMessage() {
     
     // Send to server
     sendToServer('chatMessage', { message: messageObj });
-    
-    // Add message locally
     
     // Clear input
     messageInput.value = '';
@@ -1606,6 +1622,12 @@ function populateVotingPlayers() {
 
 // Vote for a player
 function voteForPlayer(playerId) {
+  // Don't allow AI-controlled player to vote
+  if (gameState.aiControlled) {
+    showToast('error', 'As the AI-controlled player, you cannot vote');
+    return;
+  }
+  
   // Update UI
   document.querySelectorAll('.vote-btn').forEach(btn => {
     btn.classList.remove('selected');
@@ -1622,16 +1644,11 @@ function voteForPlayer(playerId) {
   // Store vote in state
   gameState.selectedVote = playerId;
   
-  // Add vote to player
+  // Send vote to server
+  sendToServer('vote', { voterId: gameState.currentPlayer.id, votedForId: playerId });
+  
   const votedPlayer = gameState.players.find(p => p.id === playerId);
-  if (votedPlayer) {
-    votedPlayer.votes = (votedPlayer.votes || 0) + 1;
-  }
-  
   showToast('info', `You voted for ${votedPlayer ? votedPlayer.name : 'unknown player'}`);
-  
-  // In a real implementation, you would send this vote to the server
-  sendToServer('playerVote', { voterId: gameState.currentPlayer.id, votedId: playerId });
 }
 
 // Show game results
@@ -1685,39 +1702,43 @@ function displayResults() {
   const resultsGrid = document.getElementById('resultsGrid');
   resultsGrid.innerHTML = '';
   
-  if (gameState.players.length === 0) {
-    resultsGrid.innerHTML = '<div class="result-card"><div class="player-name">No players in game</div></div>';
+  if (!gameState.gameResults) {
+    resultsGrid.innerHTML = '<div class="result-card"><div class="player-name">Results not available</div></div>';
     return;
   }
   
-  // Find player with most votes (the "winner")
-  const sortedPlayers = [...gameState.players].sort((a, b) => (b.votes || 0) - (a.votes || 0));
-  const mostVotedPlayer = sortedPlayers[0];
-  
-  // Find actual bots
-  const actualBots = gameState.players.filter(p => p.type === 'bot');
-  
-  // Check if most voted player is actually a bot
-  const correctIdentification = mostVotedPlayer && mostVotedPlayer.type === 'bot';
+  // Extract info from game results
+  const { aiPlayerId, aiPlayerName, mostVotedPlayerId, mostVotedPlayerName, correctIdentification, voteCounts } = gameState.gameResults;
   
   // Create results cards
   gameState.players.forEach(player => {
     const resultCard = document.createElement('div');
     resultCard.classList.add('result-card');
-    resultCard.classList.add(player.type === 'bot' ? 'bot' : 'human');
+    
+    // Highlight AI player
+    if (player.id === aiPlayerId) {
+      resultCard.classList.add('bot');
+    } else {
+      resultCard.classList.add('human');
+    }
     
     // Highlight current player
     if (gameState.currentPlayer && player.id === gameState.currentPlayer.id) {
       resultCard.classList.add('you');
     }
     
+    // Highlight most voted player
+    const isMostVoted = player.id === mostVotedPlayerId;
+    
     const initials = player.initials || player.name.substring(0, 2).toUpperCase();
+    const voteCount = voteCounts[player.id] || 0;
     
     resultCard.innerHTML = `
       <div class="avatar">${initials}</div>
       <div class="player-name">${player.name}${gameState.currentPlayer && player.id === gameState.currentPlayer.id ? ' (You)' : ''}</div>
-      <div class="result-label ${player.type === 'bot' ? 'bot' : 'human'}">${player.type === 'bot' ? 'BOT' : 'HUMAN'}</div>
-      <div class="votes-count">${player.votes || 0} vote${(player.votes || 0) !== 1 ? 's' : ''}</div>
+      <div class="result-label ${player.id === aiPlayerId ? 'bot' : 'human'}">${player.id === aiPlayerId ? 'AI PLAYER' : 'HUMAN'}</div>
+      ${isMostVoted ? '<div class="most-voted">Most Voted</div>' : ''}
+      <div class="votes-count">${voteCount} vote${voteCount !== 1 ? 's' : ''}</div>
     `;
     
     resultsGrid.appendChild(resultCard);
@@ -1728,28 +1749,11 @@ function displayResults() {
   const resultsSubtitle = document.querySelector('.voting-subtitle');
   
   if (correctIdentification) {
-    resultsTitle.textContent = "The Bot Was Found!";
-    resultsSubtitle.textContent = `${mostVotedPlayer.name} received the most votes and was indeed a bot. Humans win!`;
-    
-    // Update stats for human win
-    if (gameState.currentPlayer && gameState.currentPlayer.type === 'human') {
-      gameState.userStats.gamesWon++;
-      gameState.userStats.totalEarnings += 20; // Example payout
-    }
+    resultsTitle.textContent = "The AI Was Found!";
+    resultsSubtitle.textContent = `${mostVotedPlayerName} received the most votes and was indeed the AI player.`;
   } else {
-    resultsTitle.textContent = "The Bot Got Away!";
-    
-    if (actualBots.length > 0) {
-      resultsSubtitle.textContent = `${mostVotedPlayer.name} was voted as the bot, but the real bot was ${actualBots[0].name}. Bot wins!`;
-    } else {
-      resultsSubtitle.textContent = `${mostVotedPlayer.name} was voted as the bot, but there was no bot in this game! Bot creator wins!`;
-    }
-    
-    // Update stats for bot win
-    if (gameState.currentPlayer && gameState.currentPlayer.type === 'bot') {
-      gameState.userStats.gamesWon++;
-      gameState.userStats.totalEarnings += 20; // Example payout
-    }
+    resultsTitle.textContent = "The AI Got Away!";
+    resultsSubtitle.textContent = `${mostVotedPlayerName} was voted as the AI, but the real AI was ${aiPlayerName}.`;
   }
 }
 
@@ -1819,8 +1823,10 @@ function openModal(type) {
 function closeModal(type) {
   if (type === 'human') {
     document.getElementById('humanModal').classList.remove('active');
-  } else {
+  } else if (type === 'bot') {
     document.getElementById('botModal').classList.remove('active');
+  } else if (type === 'prompt') {
+    document.getElementById('promptModal').classList.remove('active');
   }
 }
 
@@ -1866,6 +1872,47 @@ function resetServer() {
     showToast('info', 'Server has been reset', 2000);
   } else {
     showToast('error', 'Not connected to server', 2000);
+  }
+}
+
+function submitPrompt() {
+  const promptText = document.getElementById('promptText').value.trim();
+  
+  if (!promptText) {
+    showToast('error', 'Please enter a prompt');
+    return;
+  }
+  
+  if (sendToServer('submitPrompt', { prompt: promptText })) {
+    gameState.submittedPrompt = promptText;
+    showToast('success', 'Prompt submitted successfully!');
+    closeModal('prompt');
+    
+    // Update UI to show submitted prompt
+    const submitPromptBtn = document.getElementById('submitPromptBtn');
+    if (submitPromptBtn) {
+      submitPromptBtn.innerHTML = 'Prompt Submitted ✓';
+      submitPromptBtn.disabled = true;
+      submitPromptBtn.classList.add('success-btn');
+    }
+  } else {
+    showToast('error', 'Failed to submit prompt');
+  }
+}
+
+function updateCreateGameButton() {
+  const createGameBtn = document.getElementById('createGameBtn');
+  if (createGameBtn) {
+    const hasEnoughPlayers = gameState.players.length >= 2;
+    createGameBtn.disabled = !hasEnoughPlayers || gameState.gameInProgress;
+    
+    if (!hasEnoughPlayers) {
+      createGameBtn.textContent = "Create Game (Need at least 2 players)";
+    } else if (gameState.gameInProgress) {
+      createGameBtn.textContent = "Game in Progress...";
+    } else {
+      createGameBtn.textContent = "Create New Game";
+    }
   }
 }
 
