@@ -10,7 +10,7 @@ export default function ResultsScreen() {
     gameResults, 
     players, 
     userStats,
-    updateGameState,
+    // updateGameState,
     currentGameId
   } = useGameState();
   
