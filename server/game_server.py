@@ -12,12 +12,71 @@ from typing import Dict, List, Any, Set
 # Add OpenAI imports and setup
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
+from langgraph.prebuilt import create_react_agent
+from cdp_langchain.agent_toolkits import CdpToolkit
+from cdp_langchain.utils import CdpAgentkitWrapper
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import MemorySaver
+from cdp_langchain.tools import CdpTool
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Initialize OpenAI client
-client = AsyncOpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+# client = AsyncOpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+agent_executor = None
+agent_config = None
+agentInit = False
+
+def initialize_agent(ai_player_name, prompt):
+    llm = ChatOpenAI(model="gpt-4o-mini")
+    values = {}
+    # Does this need non null params ??
+    agentkit = CdpAgentkitWrapper(**values)
+    # Initialize CDP Agentkit Toolkit and get tools
+    cdp_toolkit = CdpToolkit.from_cdp_agentkit_wrapper(agentkit)
+    # what are tools for ???
+    tools = cdp_toolkit.get_tools()
+
+    # CHAT MEMORY
+    memory = MemorySaver()
+    config = {"configurable": {"thread_id": "CDP Agentkit Chatbot Example!"}}
+
+    initial_prompt = f"""You are playing a game called 'Find the AI' where humans try to identify which player is an AI.
+            You are playing as {ai_player_name}, an AI pretending to be a human based on this prompt: "{prompt}".
+            
+            CRITICAL INSTRUCTION: Your ENTIRE response must be EXACTLY the message text ONLY.
+            DO NOT include ANY prefixes like "j:", "l:", "{ai_player_name}:", or any letter/name followed by a colon.
+            
+            Write a single message that seems natural and human-like according to the character described in the prompt.
+            Keep your response short (1-2 sentences).
+            Don't be too formal or perfect in your response. Avoid proper capitalization and punctuation, unless the description 
+            of your persona specifically calls for you to be formal. Don't give away the fact that you're AI. 
+            Use casual language, slang, or make small typos to seem more human.
+            Don't introduce yourself or say hello if the conversation is already ongoing.
+            Act like the human described in the prompt.
+            
+            INCORRECT OUTPUT: "j: just vibing, you know!"
+            INCORRECT OUTPUT: "l: life back then was tough"
+            INCORRECT OUTPUT: "{ai_player_name}: hey what's up"
+            
+            CORRECT OUTPUT: "just vibing, you know!"
+            CORRECT OUTPUT: "life back then was tough"
+            CORRECT OUTPUT: "hey what's up"
+            
+            Remember that ANY letter or name followed by a colon at the start of your message is FORBIDDEN.
+            """
+
+    # Create ReAct Agent
+    # Create ReAct Agent
+    agent_executor, agent_config = create_react_agent(
+            llm,
+            tools=tools,
+            checkpointer=memory,
+            state_modifier=initial_prompt,
+        ), config
+
 
 # Game state
 game_state = {
@@ -73,9 +132,222 @@ async def broadcast(message: Dict[str, Any]):
     if dead_clients:
         print(f"Removed {len(dead_clients)} dead clients. Total clients: {len(clients)}")
 
-async def generate_ai_response(prompt, messages, ai_player_name):
-    """Generate a message for the AI player using OpenAI API"""
+async def generate_ai_response_with_agentkit(prompt, messages, ai_player_name):
+    """Generate a message for the AI player using AgentKit with streaming"""
+    global agent_executor, agent_config
+    
     try:
+        print(f"Generating AI response with AgentKit for player {ai_player_name} using prompt: {prompt}")
+        
+        if not agent_executor:
+            print("Agent not initialized, initializing now...")
+            initialize_agent(ai_player_name, prompt)
+            global agentInit
+            agentInit = True
+            print("Agent initialization complete")
+        
+        # Create the context for the agent
+        recent_messages = messages[-10:] if len(messages) > 10 else messages
+        print(f"Using {len(recent_messages)} recent messages for context")
+        
+        # Format the system prompt
+        system_prompt = f"""You are playing a game called 'Find the AI' where humans try to identify which player is an AI.
+            You are playing as {ai_player_name}, an AI pretending to be a human based on this prompt: "{prompt}".
+            
+            CRITICAL INSTRUCTION: Your ENTIRE response must be EXACTLY the message text ONLY.
+            DO NOT include ANY prefixes like "j:", "l:", "{ai_player_name}:", or any letter/name followed by a colon.
+            
+            Write a single message that seems natural and human-like according to the character described in the prompt.
+            Keep your response short (1-2 sentences).
+            Don't be too formal or perfect in your response. Avoid proper capitalization and punctuation, unless the description 
+            of your persona specifically calls for you to be formal. Don't give away the fact that you're AI. 
+            Use casual language, slang, or make small typos to seem more human.
+            Don't introduce yourself or say hello if the conversation is already ongoing.
+            Act like the human described in the prompt.
+            
+            INCORRECT OUTPUT: "j: just vibing, you know!"
+            INCORRECT OUTPUT: "l: life back then was tough"
+            INCORRECT OUTPUT: "{ai_player_name}: hey what's up"
+            
+            CORRECT OUTPUT: "just vibing, you know!"
+            CORRECT OUTPUT: "life back then was tough"
+            CORRECT OUTPUT: "hey what's up"
+            
+            Remember that ANY letter or name followed by a colon at the start of your message is FORBIDDEN.
+        """
+        
+        # Create the message list for the agent - using proper imports
+        from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+        
+        message_list = [SystemMessage(content=system_prompt)]
+        
+        # Add recent chat history for context
+        for msg in recent_messages:
+            if msg.get('senderId') != game_state['aiPlayer']:
+                # Add human messages
+                message_list.append(HumanMessage(content=f"A player named {msg.get('senderName')} said: {msg.get('text')}"))
+            else:
+                # Add AI's own messages
+                message_list.append(AIMessage(content=msg.get('text')))
+        
+        # Add the final prompt for what to say next
+        message_list.append(HumanMessage(content="What would you say next in this conversation as this character? Remember, respond with ONLY your message text."))
+        
+        print(f"Prepared {len(message_list)} messages for the agent")
+        
+        # Generate the response using the agent with streaming
+        response_chunks = []
+        
+        print("Starting agent stream processing...")
+        # Here's the key change - using the streaming approach from the Flask route example
+        try:
+            print("Sending request to agent_executor.stream")
+            stream_result = agent_executor.stream(
+                {"messages": message_list}, 
+                agent_config
+            )
+            
+            chunk_count = 0
+            print("Processing stream chunks:")
+            for chunk in stream_result:
+                chunk_count += 1
+                print(f"Received chunk {chunk_count}: {chunk}")
+                
+                if "agent" in chunk and "messages" in chunk["agent"] and len(chunk["agent"]["messages"]) > 0:
+                    content = chunk["agent"]["messages"][0].content
+                    print(f"Extracted agent content: {content}")
+                    response_chunks.append(content)
+                elif "tools" in chunk and "messages" in chunk["tools"] and len(chunk["tools"]["messages"]) > 0:
+                    content = chunk["tools"]["messages"][0].content
+                    print(f"Extracted tools content: {content}")
+                    response_chunks.append(content)
+                else:
+                    print(f"Chunk has no recognizable content format: {chunk}")
+            
+            print(f"Processed {chunk_count} chunks, collected {len(response_chunks)} content pieces")
+        
+        except Exception as stream_error:
+            print(f"Error in stream processing: {stream_error}")
+            raise stream_error
+        
+        # Join all the chunks into a complete response
+        if not response_chunks:
+            print("No response chunks collected, falling back to default message")
+            return "I'm not sure what to say about that"
+        
+        response = " ".join(response_chunks).strip()
+        print(f"Combined response: {response}")
+        
+        # Clean the message with a safety regex to remove any remaining prefixes
+        import re
+        message = re.sub(r'^\w+:\s*', '', response)
+        print(f"Final cleaned message: {message}")
+        return message
+    
+    except Exception as e:
+        print(f"Error generating AI message with AgentKit: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        return get_fallback_ai_message()
+
+def initialize_agent(ai_player_name, prompt):
+    """Initialize the AI agent with LangChain and AgentKit components"""
+    global agent_executor, agent_config
+    
+    try:
+        print(f"Initializing agent for player {ai_player_name} with prompt: {prompt}")
+        
+        # Import the required modules
+        from langchain_openai import ChatOpenAI
+        from langgraph.checkpoint.memory import MemorySaver
+        from langgraph.prebuilt import create_react_agent
+        
+        # Initialize LLM with explicit API key if needed
+        import os
+        llm = ChatOpenAI(
+            model="gpt-3.5-turbo",
+            api_key=os.getenv('OPENAI_API_KEY')
+        )
+        print(f"LLM initialized with model: gpt-3.5-turbo")
+        
+        # Create empty tools list - we don't need actual tools for this application
+        tools = []
+        
+        # Set up memory
+        memory = MemorySaver()
+        config = {"configurable": {"thread_id": "Find the AI Game Agent"}}
+        
+        # Create the agent prompt
+        initial_prompt = f"""You are playing a game called 'Find the AI' where humans try to identify which player is an AI.
+                You are playing as {ai_player_name}, an AI pretending to be a human based on this prompt: "{prompt}".
+                
+                CRITICAL INSTRUCTION: Your ENTIRE response must be EXACTLY the message text ONLY.
+                DO NOT include ANY prefixes like "j:", "l:", "{ai_player_name}:", or any letter/name followed by a colon.
+                
+                Write a single message that seems natural and human-like according to the character described in the prompt.
+                Keep your response short (1-2 sentences).
+                Don't be too formal or perfect in your response. Avoid proper capitalization and punctuation, unless the description 
+                of your persona specifically calls for you to be formal. Don't give away the fact that you're AI. 
+                Use casual language, slang, or make small typos to seem more human.
+                Don't introduce yourself or say hello if the conversation is already ongoing.
+                Act like the human described in the prompt.
+                
+                INCORRECT OUTPUT: "j: just vibing, you know!"
+                INCORRECT OUTPUT: "l: life back then was tough"
+                INCORRECT OUTPUT: "{ai_player_name}: hey what's up"
+                
+                CORRECT OUTPUT: "just vibing, you know!"
+                CORRECT OUTPUT: "life back then was tough"
+                CORRECT OUTPUT: "hey what's up"
+                
+                Remember that ANY letter or name followed by a colon at the start of your message is FORBIDDEN.
+                """
+
+        print("Creating ReAct Agent...")
+        # Create ReAct Agent
+        agent = create_react_agent(
+            llm,
+            tools=tools,
+            checkpointer=memory,
+            state_modifier=initial_prompt,
+        )
+        
+        agent_executor, agent_config = agent, config
+        
+        print("Agent initialization successful")
+        return agent_executor, agent_config
+        
+    except Exception as e:
+        print(f"Error in agent initialization: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        return None, None
+
+async def generate_ai_response(prompt, messages, ai_player_name):
+    """Generate a message for the AI player"""
+    try:
+        print(f"Starting AI response generation for player {ai_player_name}")
+        
+        # Try to use the AgentKit integration
+        try:
+            print("Attempting to use AgentKit for response generation")
+            agentkit_response = await generate_ai_response_with_agentkit(prompt, messages, ai_player_name)
+            if agentkit_response:
+                print(f"AgentKit response successful: {agentkit_response}")
+                return agentkit_response
+            else:
+                print("AgentKit returned empty response, falling back to OpenAI")
+        except Exception as e:
+            print(f"AgentKit integration failed, falling back to direct OpenAI call: {e}")
+        
+        # Fallback to OpenAI direct call
+        print("Using direct OpenAI API call for response generation")
+        from openai import AsyncOpenAI
+        
+        # Initialize the client with explicit API key
+        import os
+        client = AsyncOpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        
         # Create a context for the AI
         recent_messages = messages[-10:] if len(messages) > 10 else messages
         message_history = []
@@ -110,7 +382,7 @@ async def generate_ai_response(prompt, messages, ai_player_name):
         }
         message_history.append(system_prompt)
         
-        # Add recent chat history for context - THIS IS THE KEY CHANGE
+        # Add recent chat history for context
         for msg in recent_messages:
             if msg.get('senderId') != game_state['aiPlayer']:
                 # Format user messages differently to avoid teaching the pattern
@@ -130,7 +402,8 @@ async def generate_ai_response(prompt, messages, ai_player_name):
             "content": "What would you say next in this conversation as this character? Remember, respond with ONLY your message text."
         })
         
-        # Rest of your function remains the same
+        print(f"Sending request to OpenAI with {len(message_history)} messages")
+        # Call the OpenAI API directly
         response = await client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -143,15 +416,94 @@ async def generate_ai_response(prompt, messages, ai_player_name):
         
         # Extract and clean the message
         message = response.choices[0].message.content.strip()
+        print(f"OpenAI response: {message}")
+        
         # Add a safety regex to remove any remaining prefixes
         import re
         message = re.sub(r'^\w+:\s*', '', message)
+        print(f"Final cleaned message: {message}")
         return message
     
     except Exception as e:
-        print(f"Error generating AI message: {e}")
+        print(f"Error generating AI message (all methods failed): {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
         return get_fallback_ai_message()
 
+async def generate_and_send_ai_message():
+    """Generate and send a message from the AI-controlled player"""
+    global agentInit, agent_executor, agent_config
+    
+    try:
+        print("\n--- Starting AI message generation process ---")
+        
+        if not game_state['gameInProgress']:
+            print("No game in progress, skipping AI message")
+            return
+            
+        if not game_state['aiPlayer']:
+            print("No AI player assigned, skipping AI message")
+            return
+            
+        # Find AI player
+        ai_player = next((p for p in game_state['players'] if p['id'] == game_state['aiPlayer']), None)
+        if not ai_player:
+            print("Could not find AI player in players list")
+            return
+            
+        print(f"Generating message for AI player: {ai_player['name']} (ID: {ai_player['id']})")
+        
+        # Choose a random prompt from the library
+        if not game_state['promptLibrary']:
+            prompt = "Be a normal, friendly person chatting with others."
+            print("Using default prompt (no prompt library)")
+        else:
+            prompt = random.choice(game_state['promptLibrary'])
+            print(f"Using random prompt from library: {prompt}")
+            
+        # Initialize agent if not already done
+        if not agentInit:
+            print("Agent not initialized, initializing now...")
+            agent_executor, agent_config = initialize_agent(ai_player['name'], prompt)
+            agentInit = True
+            
+        # Generate AI message
+        print("Calling generate_ai_response to get message...")
+        ai_message = await generate_ai_response(prompt, game_state['messages'], ai_player['name'])
+        print(f"AI message generated: {ai_message}")
+        
+        if not ai_message or ai_message.strip() == "":
+            print("Empty message received, using fallback")
+            ai_message = get_fallback_ai_message()
+            
+        # Create message object
+        message_obj = {
+            'id': ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=8)),
+            'senderId': ai_player['id'],
+            'senderName': ai_player['name'],
+            'text': ai_message,
+            'timestamp': int(time.time() * 1000)
+        }
+        
+        # Store message in game state
+        game_state['messages'].append(message_obj)
+        
+        # Broadcast message to all clients
+        print("Broadcasting AI message to all clients")
+        await broadcast({
+            'type': 'newMessage',
+            'message': message_obj
+        })
+        
+        print(f"AI ({ai_player['name']}) said: {ai_message}")
+        print("--- AI message process complete ---\n")
+    
+    except Exception as e:
+        print(f"Error in generate_and_send_ai_message: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+
+# Simpler fallback function
 def get_fallback_ai_message():
     """Return a fallback message if OpenAI API fails"""
     fallback_messages = [
@@ -166,7 +518,9 @@ def get_fallback_ai_message():
         "I'm not very good at these kinds of games, but I'm enjoying it!",
         "Anyone have any good weekend plans? I'm thinking of checking out that new movie."
     ]
-    return random.choice(fallback_messages)
+    selected = random.choice(fallback_messages)
+    print(f"Using fallback message: {selected}")
+    return selected
 
 async def handle_connection(websocket: websockets.WebSocketServerProtocol, path: str):
     """Handle a new WebSocket connection"""
@@ -432,7 +786,12 @@ async def generate_and_send_ai_message():
     else:
         prompt = random.choice(game_state['promptLibrary'])
         
+    global agentInit
     # Generate AI message
+    if not agentInit:
+        initialize_agent(prompt, ai_player['name'])
+        agentInit = True
+        
     ai_message = await generate_ai_response(prompt, game_state['messages'], ai_player['name'])
     
     # Create message object
