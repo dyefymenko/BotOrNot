@@ -16,7 +16,7 @@ contract BotOrNotGame is Ownable {
     uint256 public constant ENTRY_FEE = 10 * 10**6; // 10 USDC with 6 decimals
 
     // Game state
-    enum GameState { WAITING, IN_PROGRESS, VOTING, COMPLETED }
+    enum GameState { WAITING, IN_PROGRESS, COMPLETED }
     
     struct Game {
         string gameId;
@@ -42,7 +42,6 @@ contract BotOrNotGame is Ownable {
     event GameCreated(string indexed gameId);
     event PlayerJoined(string indexed gameId, address player);
     event GameStarted(string indexed gameId, address aiPlayer, uint256 prizePool);
-    event VotingStarted(string indexed gameId);
     event PlayerVoted(string indexed gameId, address voter, address votedFor);
     event GameCompleted(string indexed gameId, address aiPlayer, address mostVotedPlayer, bool correctlyIdentified);
     event RewardClaimed(string indexed gameId, address player, uint256 amount);
@@ -59,7 +58,7 @@ contract BotOrNotGame is Ownable {
      * @dev Creates a new game
      * @param gameId Unique identifier for the game
      */
-    function createGame(string memory gameId) external onlyOwner {
+    function createGame(string memory gameId) external {
         require(bytes(games[gameId].gameId).length == 0 || games[gameId].state == GameState.COMPLETED, "Game already exists and is not completed");
         
         // Initialize new game
@@ -117,7 +116,7 @@ contract BotOrNotGame is Ownable {
      * @dev Starts a game and randomly selects an AI player
      * @param gameId The ID of the game to start
      */
-    function startGame(string memory gameId) external onlyOwner {
+    function startGame(string memory gameId) external {
         Game storage game = games[gameId];
         
         require(game.state == GameState.WAITING, "Game not in waiting state");
@@ -134,20 +133,6 @@ contract BotOrNotGame is Ownable {
         emit GameStarted(gameId, game.aiPlayer, game.prizePool);
     }
     
-    /**
-     * @dev Transitions a game from chat phase to voting phase
-     * @param gameId The ID of the game
-     */
-    function startVoting(string memory gameId) external onlyOwner {
-        Game storage game = games[gameId];
-        
-        require(game.state == GameState.IN_PROGRESS, "Game not in progress");
-        require(block.timestamp >= game.startTime + 60, "Chat time not elapsed"); // 60 seconds chat time
-        
-        game.state = GameState.VOTING;
-        
-        emit VotingStarted(gameId);
-    }
     
     /**
      * @dev Allows a player to vote for who they think is the AI
@@ -157,7 +142,6 @@ contract BotOrNotGame is Ownable {
     function vote(string memory gameId, address votedFor) external {
         Game storage game = games[gameId];
         
-        require(game.state == GameState.VOTING, "Voting not active");
         require(!game.hasVoted[msg.sender], "Already voted");
         require(msg.sender != game.aiPlayer, "AI player cannot vote");
         
@@ -182,10 +166,8 @@ contract BotOrNotGame is Ownable {
      * @dev Ends a game and determines winners
      * @param gameId The ID of the game to end
      */
-    function endGame(string memory gameId) external onlyOwner {
+    function endGame(string memory gameId) external {
         Game storage game = games[gameId];
-        
-        require(game.state == GameState.VOTING, "Game not in voting phase");
         
         // Count votes to determine most voted player
         address mostVotedPlayer = address(0);
