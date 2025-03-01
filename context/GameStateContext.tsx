@@ -110,11 +110,11 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
       const newUpdates = typeof updates === 'function' ? updates(prevState) : updates;
       
       // Special handling for messages array updates
-      if (typeof newUpdates.messages === 'function') {
+      if (newUpdates.messages && typeof newUpdates.messages === 'function') {
         return {
           ...prevState,
           ...newUpdates,
-          messages: newUpdates.messages(prevState.messages),
+          messages: (newUpdates.messages as (prev: Message[]) => Message[])(prevState.messages),
         };
       }
       

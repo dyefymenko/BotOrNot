@@ -4,8 +4,7 @@ import { useState } from 'react';
 import { useConnection } from '../context/ConnectionContext';
 import { useGameState } from '../context/GameStateContext';
 import { useAccount } from 'wagmi';
-import { Transaction, LifecycleStatus, TransactionButton, TransactionStatus, TransactionStatusLabel, TransactionStatusAction, TransactionDefault } from "@coinbase/onchainkit/transaction"
-import { useCallback } from 'react';
+import { TransactionDefault } from "@coinbase/onchainkit/transaction"
 import { encodeFunctionData } from 'viem';
 interface JoinModalProps {
   isOpen: boolean;
@@ -46,7 +45,7 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
       name: username,
       walletAddress: address || '',
       initials: username.substring(0, 2).toUpperCase(),
-      type: 'human' as 'human'
+      type: 'human' as const
     };
     
     // Join the game
@@ -220,7 +219,7 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
         </div>
         
         <div className="mb-6">
-          <label className="block text-white/80 mb-2">Your AI Agent Prompt (In case you're selected)</label>
+          <label className="block text-white/80 mb-2">Your AI Agent Prompt (In case selected)</label>
           <input 
             type="text" 
             className="w-full p-3 rounded-lg bg-gray-700/50 border border-white/20 text-white"

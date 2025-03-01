@@ -138,7 +138,7 @@ export default function PlayerCard({
             `}
             onSuccess={() => handleVote()} // Still handle the UI update on success
           >
-            VOTE AS AI
+            {/* VOTE AS AI */}
           </TransactionDefault>
         </div>
       )}

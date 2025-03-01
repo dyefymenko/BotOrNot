@@ -1,7 +1,6 @@
 'use client';
 
 import { useGameState } from '../context/GameStateContext';
-import { useConnection } from '../context/ConnectionContext';
 import PlayerCard from './PlayerCard';
 import { TransactionDefault } from "@coinbase/onchainkit/transaction";
 import { encodeFunctionData } from 'viem';
@@ -15,7 +14,6 @@ export default function ResultsScreen() {
     currentGameId
   } = useGameState();
   
-  const { sendToServer } = useConnection();
   
   // Contract configuration
   const BASE_SEPOLIA_CHAIN_ID = 84532;
@@ -54,7 +52,7 @@ export default function ResultsScreen() {
           chainId={BASE_SEPOLIA_CHAIN_ID} 
           className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-3 px-8 rounded-full transition-all duration-200 shadow-md"
         >
-          Show Results
+          {/* Show Results */}
         </TransactionDefault>
       </div>
     );

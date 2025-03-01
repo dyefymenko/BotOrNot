@@ -183,7 +183,7 @@ export default function ChatRoom() {
         
         {aiControlled && (
           <div className="mt-4 text-center bg-indigo-900/30 border border-indigo-700/50 rounded-lg p-3 text-white">
-            <span className="font-medium">You've been selected as the AI-controlled player for this round.</span> You cannot send messages.
+            <span className="font-medium">You have been selected as the AI-controlled player for this round.</span> You cannot send messages.
           </div>
         )}
       </div>

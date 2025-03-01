@@ -135,14 +135,15 @@ export const ConnectionProvider = ({
         
       case "newMessage":
         if (data.message) {
-          updateGameState({ 
-            messages: (prev: any[]) => {
-              // Check if message with this ID already exists
-              if (prev.some(msg => msg.id === data.message.id)) {
-                return prev; // Don't add duplicate
-              }
-              return [...prev, data.message];
-            } 
+          // Check if message with this ID already exists
+          const existingMessages = updateGameState((prevState) => {
+            if (prevState.messages.some(msg => msg.id === data.message.id)) {
+              return prevState; // Don't add duplicate
+            }
+            return {
+              ...prevState,
+              messages: [...prevState.messages, data.message]
+            };
           });
         }
         break;

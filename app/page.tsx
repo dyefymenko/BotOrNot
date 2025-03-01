@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
 import { Address, Avatar, Name, Identity, EthBalance } from '@coinbase/onchainkit/identity';
 import GameLobby from '../components/GameLobby';
@@ -9,14 +9,12 @@ import ChatRoom from '../components/ChatRoom';
 import VotingRoom from '../components/VotingRoom';
 import ResultsScreen from '../components/ResultsScreen';
 import JoinModal from '../components/JoinModal';
-import { useConnection } from '../context/ConnectionContext';
 import { useGameState } from '../context/GameStateContext';
 import ConnectionStatus from '../components/ConnectionStatus';
 import Toast from '../components/Toast';
 
 export default function Home() {
   const [showJoinModal, setShowJoinModal] = useState(false);
-  const { connectionStatus } = useConnection();
   const { currentView, toasts, removeToast } = useGameState();
 
   return (

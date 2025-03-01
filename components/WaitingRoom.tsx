@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import PlayerCard from './PlayerCard';
-import { TransactionButton, TransactionDefault } from "@coinbase/onchainkit/transaction";
+import { TransactionDefault } from "@coinbase/onchainkit/transaction";
 import { encodeFunctionData } from 'viem';
 
 export default function WaitingRoom() {
@@ -130,7 +130,7 @@ export default function WaitingRoom() {
               chainId={BASE_SEPOLIA_CHAIN_ID} 
               className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-3 px-8 rounded-full transition-all duration-200 shadow-md"
             >
-              Create Game
+              {/* Create Game */}
             </TransactionDefault>
           </div>
         )}
@@ -142,7 +142,7 @@ export default function WaitingRoom() {
               chainId={BASE_SEPOLIA_CHAIN_ID} 
               className="bg-gradient-to-r from-green-500 to-cyan-500 hover:from-green-600 hover:to-cyan-600 text-white font-bold py-3 px-8 rounded-full transition-all duration-200 shadow-md"
             >
-              Start Game
+              {/* Start Game */}
             </TransactionDefault>
           </div>
         )}

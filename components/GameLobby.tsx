@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useGameState } from '../context/GameStateContext';
-import { useConnection } from '../context/ConnectionContext';
 import PlayerCard from './PlayerCard';
 import { TransactionDefault } from "@coinbase/onchainkit/transaction";
 import { encodeFunctionData } from 'viem';
@@ -118,7 +117,7 @@ export default function GameLobby({ onJoinClick }: GameLobbyProps) {
         calls={createGameCalls} 
         chainId={BASE_SEPOLIA_CHAIN_ID}
       >
-        Create Game
+        {/* Create Game */}
       </TransactionDefault>
     </div>
   )}
