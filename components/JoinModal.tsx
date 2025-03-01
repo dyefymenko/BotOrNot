@@ -6,6 +6,7 @@ import { useGameState } from '../context/GameStateContext';
 import { useAccount } from 'wagmi';
 import { TransactionDefault } from "@coinbase/onchainkit/transaction"
 import { encodeFunctionData } from 'viem';
+import { FundButton } from '@coinbase/onchainkit/fund';
 interface JoinModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -278,6 +279,9 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
             className="w-full bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-all mb-3"
           >
           </TransactionDefault>
+
+          <p>Fund Wallet</p>
+          <FundButton />
 
           <p>Approve 10 USDC</p>
           <TransactionDefault 
