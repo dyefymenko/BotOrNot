@@ -182,12 +182,24 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
   ] as const;
   
 
-  const calls = [
+  const join_calls = [
     {
       to: ContractAddress as `0x${string}`,
       data: encodeFunctionData({
         abi: ContractAbi,
         functionName: 'joinGame',
+        args: ['1']
+      }) as `0x${string}`,
+    }
+  ];
+
+  // Create game call data
+  const createGameCalls = [
+    {
+      to: ContractAddress as `0x${string}`,
+      data: encodeFunctionData({
+        abi: ContractAbi,
+        functionName: 'createGame',
         args: ['1']
       }) as `0x${string}`,
     }
@@ -228,8 +240,14 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
             onChange={(e) => setPromptText(e.target.value)}
           />
         </div>
+        <TransactionDefault 
+        calls={createGameCalls} 
+        chainId={BASE_SEPOLIA_CHAIN_ID}
+      >
+        {/* Create Game */}
+      </TransactionDefault>
 
-        <TransactionDefault calls={calls} chainId={BASE_SEPOLIA_CHAIN_ID} className={"Pay 10 USDC"} />
+        <TransactionDefault calls={join_calls} chainId={BASE_SEPOLIA_CHAIN_ID} className={"Pay 10 USDC"} />
         
 
         <button 

@@ -32,18 +32,6 @@ export default function GameLobby({ onJoinClick }: GameLobbyProps) {
     }
   ] as const;
   
-  // Create game call data
-  const createGameCalls = [
-    {
-      to: ContractAddress as `0x${string}`,
-      data: encodeFunctionData({
-        abi: ContractAbi,
-        functionName: 'createGame',
-        args: [currentGameId]
-      }) as `0x${string}`,
-    }
-  ];
-  
   // Update countdown timer
   useEffect(() => {
     const updateTimer = () => {
@@ -111,16 +99,6 @@ export default function GameLobby({ onJoinClick }: GameLobbyProps) {
     </div>
   </div>
   
-  {players.length >= 2 && (
-    <div className="text-center mb-6">
-      <TransactionDefault 
-        calls={createGameCalls} 
-        chainId={BASE_SEPOLIA_CHAIN_ID}
-      >
-        {/* Create Game */}
-      </TransactionDefault>
-    </div>
-  )}
   
   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
     {players.length > 0 ? (
