@@ -524,6 +524,18 @@ def get_fallback_ai_message():
 
 async def handle_connection(websocket: websockets.WebSocketServerProtocol, path: str):
     """Handle a new WebSocket connection"""
+
+    # Handle CORS
+    origin = websocket.request_headers.get("Origin", "")
+    if origin:
+        allowed_origins = [
+            "https://bot-or-not-woad.vercel.app/",
+            "http://localhost:3000"  # For local development
+        ]
+        if not any(origin.startswith(allowed) for allowed in allowed_origins):
+            print(f"Rejected connection from unauthorized origin: {origin}")
+            return
+
     # Generate a random client ID
     client_id = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=8))
     
