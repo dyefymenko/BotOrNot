@@ -270,32 +270,29 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
           />
         </div>
 
-        {/* First approve USDC spending */}
         <div className="mb-4">
-          <TransactionDefault 
-            calls={approveCalls} 
-            chainId={BASE_SEPOLIA_CHAIN_ID}
-            className="w-full bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-all mb-3"
-          >
-            {/* Step 1: Approve USDC */}
-          </TransactionDefault>
-
-          {/* Then create game (if needed) */}
+          <p>Create Game</p>
           <TransactionDefault 
             calls={createGameCalls} 
             chainId={BASE_SEPOLIA_CHAIN_ID}
             className="w-full bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-all mb-3"
           >
-            {/* Step 2: Create Game */}
           </TransactionDefault>
 
-          {/* Finally join the game */}
+          <p>Approve 10 USDC</p>
+          <TransactionDefault 
+            calls={approveCalls} 
+            chainId={BASE_SEPOLIA_CHAIN_ID}
+            className="w-full bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-all mb-3"
+          >
+          </TransactionDefault>
+
+          <p>Join Game</p>
           <TransactionDefault 
             calls={joinGameCalls} 
             chainId={BASE_SEPOLIA_CHAIN_ID} 
             className="w-full bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700 transition-all"
           >
-            {/* Step 3: Join Game */}
           </TransactionDefault>
         </div>
 
