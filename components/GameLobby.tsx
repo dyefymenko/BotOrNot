@@ -19,7 +19,7 @@ export default function GameLobby({ onJoinClick }: GameLobbyProps) {
   
   // Contract configuration
   const BASE_SEPOLIA_CHAIN_ID = 84532;
-  const ContractAddress = '0x67157F48880D92Fdddb18451263F370564f19E1F';
+  const ContractAddress = '0x553384563d2D7aB0fa600FEC0f233d59A475d36a';
   const ContractAbi = [
     {
       type: 'function',
