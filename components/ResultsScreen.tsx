@@ -17,7 +17,7 @@ export default function ResultsScreen() {
   
   // Contract configuration
   const BASE_SEPOLIA_CHAIN_ID = 84532;
-  const ContractAddress = '0x8c6922Ee7ffDB60fE1B0ff54cEC92B29DbCF72b2';
+  const ContractAddress = '0x92bA074CDb98306cc6B0A75eD30dF7EC8E4240d5';
   const ContractAbi = [
     {
       type: 'function',

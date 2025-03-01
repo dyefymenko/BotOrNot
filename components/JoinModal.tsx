@@ -69,7 +69,7 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
   const BASE_SEPOLIA_CHAIN_ID = 84532;
 
   // Game contract address
-  const ContractAddress = '0x8c6922Ee7ffDB60fE1B0ff54cEC92B29DbCF72b2';
+  const ContractAddress = '0x92bA074CDb98306cc6B0A75eD30dF7EC8E4240d5';
   
   // USDC token contract address on Base Sepolia
   const USDCAddress = '0x036CbD53842c5426634e7929541eC2318f3dCF7e'; // Replace with actual USDC address

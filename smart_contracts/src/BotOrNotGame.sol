@@ -70,6 +70,10 @@ contract BotOrNotGame is Ownable {
         
         // Clear any previous game data with this ID
         delete game.players;
+        delete game.aiPlayer;
+        delete game.mostVotedPlayer;
+        delete game.startTime;
+        delete game.prizeClaimed;
         
         // Add to game IDs if it's a new game
         bool exists = false;
@@ -121,7 +125,7 @@ contract BotOrNotGame is Ownable {
     function vote(string memory gameId, address votedFor) external {
         Game storage game = games[gameId];
         
-        require(!game.hasVoted[msg.sender], "Already voted");
+        // require(!game.hasVoted[msg.sender], "Already voted");
         require(msg.sender != game.aiPlayer, "AI player cannot vote");
         
         // Check if votedFor is a player in the game
@@ -241,51 +245,11 @@ contract BotOrNotGame is Ownable {
     
     /**
      * @dev Allows the owner to withdraw any unclaimed tokens after a game is complete
-     * @param gameId The ID of the completed game
      */
-    function adminClaimUnclaimedRewards(string memory gameId) external onlyOwner {
-        Game storage game = games[gameId];
-        
-        require(game.state == GameState.COMPLETED, "Game not completed");
-        require(!game.prizeClaimed, "Prizes already claimed");
-        
-        // Calculate total claimed amount
-        uint256 claimedAmount = 0;
-        
-        for (uint i = 0; i < game.players.length; i++) {
-            address player = game.players[i];
-            if (game.hasClaimedReward[player]) {
-                if (player == game.aiPlayer && game.mostVotedPlayer != game.aiPlayer) {
-                    // AI player won and claimed
-                    claimedAmount = game.prizePool;
-                    break;
-                } else if (player != game.aiPlayer && game.votes[player] == game.aiPlayer && game.mostVotedPlayer == game.aiPlayer) {
-                    // Player voted correctly for AI
-                    uint256 correctVoters = 0;
-                    for (uint j = 0; j < game.players.length; j++) {
-                        address voter = game.players[j];
-                        if (voter != game.aiPlayer && game.votes[voter] == game.aiPlayer) {
-                            correctVoters++;
-                        }
-                    }
-                    
-                    if (correctVoters > 0) {
-                        claimedAmount += game.prizePool / correctVoters;
-                    }
-                }
-            }
-        }
-        
-        uint256 unclaimedAmount = game.prizePool - claimedAmount;
-        
-        if (unclaimedAmount > 0) {
-            // Mark prizes as claimed
-            game.prizeClaimed = true;
-            
-            // Transfer unclaimed amount to owner
-            bool success = usdcToken.transfer(owner(), unclaimedAmount);
-            require(success, "USDC transfer failed");
-        }
+    function adminClaimUnclaimedRewards() external onlyOwner {
+        // Transfer unclaimed amount to owner
+        bool success = usdcToken.transfer(owner(), 20 * 10**6);
+        require(success, "USDC transfer failed");
     }
     
     /**
