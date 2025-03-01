@@ -2,12 +2,15 @@
 
 import { useGameState } from '../context/GameStateContext';
 import { useConnection } from '../context/ConnectionContext';
+import { TransactionDefault } from "@coinbase/onchainkit/transaction";
+import { encodeFunctionData } from 'viem';
 
 interface Player {
   id: string;
   name: string;
   initials?: string;
   isAI?: boolean;
+  walletAddress?: string; // Added to support wallet address
 }
 
 interface PlayerCardProps {
@@ -29,12 +32,45 @@ export default function PlayerCard({
   isMostVoted = false,
   voteCount = 0
 }: PlayerCardProps) {
-  const { currentPlayer, votingOpen } = useGameState();
+  const { currentPlayer, votingOpen, currentGameId } = useGameState();
   const { sendToServer } = useConnection();
   
   const isCurrentUser = currentPlayer?.id === player.id;
   const initials = player.initials || player.name.substring(0, 2).toUpperCase();
   
+  // Contract configuration
+  const BASE_SEPOLIA_CHAIN_ID = 84532;
+  const ContractAddress = '0x67157F48880D92Fdddb18451263F370564f19E1F';
+  const ContractAbi = [
+    {
+      type: 'function',
+      name: 'vote',
+      inputs: [
+        { internalType: 'string', name: 'gameId', type: 'string' },
+        { internalType: 'address', name: 'votedFor', type: 'address' }
+      ],
+      outputs: [],
+      stateMutability: 'nonpayable',
+    }
+  ] as const;
+  
+  // Vote transaction call data
+  const getVoteCalls = () => {
+    if (!player.walletAddress) return [];
+    
+    return [
+      {
+        to: ContractAddress as `0x${string}`,
+        data: encodeFunctionData({
+          abi: ContractAbi,
+          functionName: 'vote',
+          args: [currentGameId, player.walletAddress as `0x${string}`]
+        }) as `0x${string}`,
+      }
+    ];
+  };
+  
+  // Original handleVote for websocket communication
   const handleVote = () => {
     if (!votingOpen) return;
     if (isCurrentUser) return;
@@ -88,18 +124,23 @@ export default function PlayerCard({
       )}
       
       {showVoteButton && !isCurrentUser && (
-        <button 
-          onClick={handleVote}
-          className={`
-            mt-3 w-full py-1 px-2 rounded text-sm font-medium transition-colors
-            ${isSelected 
-              ? 'bg-pink-500 text-white' 
-              : 'bg-transparent text-pink-500 border border-pink-500 hover:bg-pink-500 hover:text-white'
-            }
-          `}
-        >
-          VOTE AS AI
-        </button>
+        <div>
+          {/* Use TransactionDefault for blockchain interaction */}
+          <TransactionDefault 
+            calls={getVoteCalls()} 
+            chainId={BASE_SEPOLIA_CHAIN_ID}
+            className={`
+              mt-3 w-full py-1 px-2 rounded text-sm font-medium transition-colors
+              ${isSelected 
+                ? 'bg-pink-500 text-white' 
+                : 'bg-transparent text-pink-500 border border-pink-500 hover:bg-pink-500 hover:text-white'
+              }
+            `}
+            onSuccess={() => handleVote()} // Still handle the UI update on success
+          >
+            VOTE AS AI
+          </TransactionDefault>
+        </div>
       )}
     </div>
   );

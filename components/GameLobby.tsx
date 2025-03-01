@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { useConnection } from '../context/ConnectionContext';
 import PlayerCard from './PlayerCard';
+import { TransactionDefault } from "@coinbase/onchainkit/transaction";
+import { encodeFunctionData } from 'viem';
 
 interface GameLobbyProps {
   onJoinClick: () => void;
@@ -15,6 +17,33 @@ export default function GameLobby({ onJoinClick }: GameLobbyProps) {
   
   // Calculate prize pool
   const prizePool = players.length * 10;
+  
+  // Contract configuration
+  const BASE_SEPOLIA_CHAIN_ID = 84532;
+  const ContractAddress = '0x67157F48880D92Fdddb18451263F370564f19E1F';
+  const ContractAbi = [
+    {
+      type: 'function',
+      name: 'createGame',
+      inputs: [
+        { internalType: 'string', name: 'gameId', type: 'string' }
+      ],
+      outputs: [],
+      stateMutability: 'nonpayable',
+    }
+  ] as const;
+  
+  // Create game call data
+  const createGameCalls = [
+    {
+      to: ContractAddress as `0x${string}`,
+      data: encodeFunctionData({
+        abi: ContractAbi,
+        functionName: 'createGame',
+        args: [currentGameId]
+      }) as `0x${string}`,
+    }
+  ];
   
   // Update countdown timer
   useEffect(() => {
@@ -82,6 +111,17 @@ export default function GameLobby({ onJoinClick }: GameLobbyProps) {
       </div>
     </div>
   </div>
+  
+  {players.length >= 2 && (
+    <div className="text-center mb-6">
+      <TransactionDefault 
+        calls={createGameCalls} 
+        chainId={BASE_SEPOLIA_CHAIN_ID}
+      >
+        Create Game
+      </TransactionDefault>
+    </div>
+  )}
   
   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
     {players.length > 0 ? (

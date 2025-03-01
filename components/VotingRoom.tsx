@@ -38,6 +38,13 @@ export default function VotingRoom() {
     return `00:${String(seconds).padStart(2, '0')}`;
   };
   
+  // Automatically move to results screen when timer ends
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      updateGameState({ currentView: 'results' });
+    }
+  }, [timeLeft, updateGameState]);
+  
   if (aiControlled) {
     return (
       <div className="w-full">
