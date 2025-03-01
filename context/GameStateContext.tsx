@@ -201,7 +201,8 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
         userStats: {
           ...prev.userStats,
           gamesPlayed: prev.userStats.gamesPlayed + 1,
-        }
+        },
+        nextGameTime: null
       }));
       
       // Update games won if player voted correctly

@@ -17,14 +17,14 @@ export default function ResultsScreen() {
   
   // Contract configuration
   const BASE_SEPOLIA_CHAIN_ID = 84532;
-  const ContractAddress = '0x553384563d2D7aB0fa600FEC0f233d59A475d36a';
+  const ContractAddress = '0x8c6922Ee7ffDB60fE1B0ff54cEC92B29DbCF72b2';
   const ContractAbi = [
     {
       type: 'function',
       name: 'endGame',
       inputs: [
         { internalType: 'string', name: 'gameId', type: 'string' },
-        { internalType: 'string', name: 'aiPlayer', type: 'string' }
+        { internalType: 'string', name: 'aiPlayer', type: 'address' }
       ],
       outputs: [],
       stateMutability: 'nonpayable',
@@ -65,7 +65,7 @@ export default function ResultsScreen() {
       data: encodeFunctionData({
         abi: ContractAbi,
         functionName: 'endGame',
-        args: [currentGameId, aiPlayerAddress]
+        args: [currentGameId, aiPlayerAddress as `0x${string}`]
       }) as `0x${string}`,
     }
   ];

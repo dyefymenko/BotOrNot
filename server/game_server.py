@@ -821,8 +821,12 @@ async def start_game_loop():
         await asyncio.sleep(1)
         now = int(time.time() * 1000)
         
-        # If countdown completed and game not started yet
-        if not game_state['gameInProgress'] and now >= game_state['nextGameTime'] and len(game_state['players']) >= 2:
+        # If countdown completed and game not started yet and there's a valid next game time
+        # Note: We now check if nextGameTime exists before trying to start a new game
+        if (not game_state['gameInProgress'] and 
+            game_state['nextGameTime'] is not None and 
+            now >= game_state['nextGameTime'] and 
+            len(game_state['players']) >= 2):
             # Start new game
             await start_game()
         
@@ -974,11 +978,11 @@ async def end_voting():
         'message': result_message
     })
     
-    # End game and prepare for next round
+    # End game but don't prepare for next round automatically
     game_state['gameInProgress'] = False
-    game_state['nextGameTime'] = int(time.time() * 1000) + 30000  # 30 second countdown to next game
     game_state['aiPlayer'] = None
-    
+    # Remove the countdown to next game
+    game_state['nextGameTime'] = None
     print("Game ended, showing results")
     print_game_state()
     
