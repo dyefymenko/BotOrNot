@@ -23,6 +23,16 @@ export default function ResultsScreen() {
       type: 'function',
       name: 'endGame',
       inputs: [
+        { internalType: 'string', name: 'gameId', type: 'string' },
+        { internalType: 'string', name: 'aiPlayer', type: 'string' }
+      ],
+      outputs: [],
+      stateMutability: 'nonpayable',
+    },
+    {
+      type: 'function',
+      name: 'claimRewards',
+      inputs: [
         { internalType: 'string', name: 'gameId', type: 'string' }
       ],
       outputs: [],
@@ -30,30 +40,10 @@ export default function ResultsScreen() {
     }
   ] as const;
   
-  // End game call data
-  const endGameCalls = [
-    {
-      to: ContractAddress as `0x${string}`,
-      data: encodeFunctionData({
-        abi: ContractAbi,
-        functionName: 'endGame',
-        args: [currentGameId]
-      }) as `0x${string}`,
-    }
-  ];
-  
   if (!gameResults) {
     return (
       <div className="text-center py-8">
         <p className="text-xl text-white mb-6">Voting has ended! Calculating results...</p>
-        
-        <TransactionDefault 
-          calls={endGameCalls} 
-          chainId={BASE_SEPOLIA_CHAIN_ID} 
-          className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-3 px-8 rounded-full transition-all duration-200 shadow-md"
-        >
-          {/* Show Results */}
-        </TransactionDefault>
       </div>
     );
   }
@@ -61,16 +51,35 @@ export default function ResultsScreen() {
   const { 
     aiPlayerId, 
     aiPlayerName, 
+    aiPlayerAddress,
     mostVotedPlayerId, 
     mostVotedPlayerName, 
     correctIdentification, 
     voteCounts 
   } = gameResults;
-  
-  const handlePlayAgain = () => {
-    // Go back to waiting room
-    updateGameState({ currentView: 'waiting' });
-  };
+
+  // End game call data
+  const endGameCalls = [
+    {
+      to: ContractAddress as `0x${string}`,
+      data: encodeFunctionData({
+        abi: ContractAbi,
+        functionName: 'endGame',
+        args: [currentGameId, aiPlayerAddress]
+      }) as `0x${string}`,
+    }
+  ];
+
+  const claimRewardsCalls = [
+    {
+      to: ContractAddress as `0x${string}`,
+      data: encodeFunctionData({
+        abi: ContractAbi,
+        functionName: 'claimRewards',
+        args: [currentGameId]
+      }) as `0x${string}`,
+    }
+  ];
   
   return (
     <div className="w-full">
@@ -120,12 +129,27 @@ export default function ResultsScreen() {
           </div>
         </div>
         
-        <button 
-          onClick={handlePlayAgain}
+        return (
+        <p>End Game</p>
+        <TransactionDefault 
+          calls={endGameCalls} 
+          chainId={BASE_SEPOLIA_CHAIN_ID} 
           className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-3 px-8 rounded-full transition-all duration-200 shadow-md"
         >
-          Play Again
-        </button>
+          {/* End Game */}
+        </TransactionDefault>
+
+        <p>Claim Rewards</p>
+        <TransactionDefault 
+          calls={claimRewardsCalls} 
+          chainId={BASE_SEPOLIA_CHAIN_ID} 
+          className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-3 px-8 rounded-full transition-all duration-200 shadow-md"
+        >
+          {/* Claim Rewards */}
+        </TransactionDefault>
+
+
+    );
       </div>
     </div>
   );

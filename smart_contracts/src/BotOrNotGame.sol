@@ -59,12 +59,12 @@ contract BotOrNotGame is Ownable {
      * @param gameId Unique identifier for the game
      */
     function createGame(string memory gameId) external {
-        require(bytes(games[gameId].gameId).length == 0 || games[gameId].state == GameState.COMPLETED, "Game already exists and is not completed");
+        // require(bytes(games[gameId].gameId).length == 0 || games[gameId].state == GameState.COMPLETED, "Game already exists and is not completed");
         
         // Initialize new game
         Game storage game = games[gameId];
         game.gameId = gameId;
-        game.state = GameState.WAITING;
+        game.state = GameState.IN_PROGRESS;
         game.prizePool = 0;
         game.prizeClaimed = false;
         
@@ -94,7 +94,7 @@ contract BotOrNotGame is Ownable {
     function joinGame(string memory gameId) external {
         Game storage game = games[gameId];
         
-        require(game.state == GameState.WAITING, "Game not in waiting state");
+        require(game.state == GameState.IN_PROGRESS, "Game not in progress");
         
         // Check if player has already joined
         for (uint i = 0; i < game.players.length; i++) {
@@ -110,27 +110,6 @@ contract BotOrNotGame is Ownable {
         game.prizePool += ENTRY_FEE;
         
         emit PlayerJoined(gameId, msg.sender);
-    }
-    
-    /**
-     * @dev Starts a game and randomly selects an AI player
-     * @param gameId The ID of the game to start
-     */
-    function startGame(string memory gameId) external {
-        Game storage game = games[gameId];
-        
-        require(game.state == GameState.WAITING, "Game not in waiting state");
-        require(game.players.length >= 2, "Not enough players");
-        
-        // Randomly select AI player using a combination of block attributes for randomness
-        uint256 randomIndex = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, msg.sender))) % game.players.length;
-        game.aiPlayer = game.players[randomIndex];
-        
-        // Update game state
-        game.state = GameState.IN_PROGRESS;
-        game.startTime = block.timestamp;
-        
-        emit GameStarted(gameId, game.aiPlayer, game.prizePool);
     }
     
     
@@ -166,8 +145,9 @@ contract BotOrNotGame is Ownable {
      * @dev Ends a game and determines winners
      * @param gameId The ID of the game to end
      */
-    function endGame(string memory gameId) external {
+    function endGame(string memory gameId, address aiPlayer) external {
         Game storage game = games[gameId];
+        game.aiPlayer = aiPlayer;
         
         // Count votes to determine most voted player
         address mostVotedPlayer = address(0);

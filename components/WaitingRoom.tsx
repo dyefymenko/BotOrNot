@@ -3,66 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import PlayerCard from './PlayerCard';
-import { TransactionDefault } from "@coinbase/onchainkit/transaction";
-import { encodeFunctionData } from 'viem';
+
 
 export default function WaitingRoom() {
   const { players, currentGameId, nextGameTime, gameInProgress } = useGameState();
   const [timeLeft, setTimeLeft] = useState<string>('00:00');
   const [progress, setProgress] = useState(0);
-  const [showStartButton, setShowStartButton] = useState(false);
+  // const [showStartButton, setShowStartButton] = useState(false);
   
   // Calculate prize pool
   const prizePool = players.length * 10;
   
-  // Contract configuration
-  const BASE_SEPOLIA_CHAIN_ID = 84532;
-  const ContractAddress = '0x553384563d2D7aB0fa600FEC0f233d59A475d36a';
-  const ContractAbi = [
-    {
-      type: 'function',
-      name: 'createGame',
-      inputs: [
-        { internalType: 'string', name: 'gameId', type: 'string' }
-      ],
-      outputs: [],
-      stateMutability: 'nonpayable',
-    },
-    {
-      type: 'function',
-      name: 'startGame',
-      inputs: [
-        { internalType: 'string', name: 'gameId', type: 'string' }
-      ],
-      outputs: [],
-      stateMutability: 'nonpayable',
-    }
-  ] as const;
-  
-  // Create game call data
-  const createGameCalls = [
-    {
-      to: ContractAddress as `0x${string}`,
-      data: encodeFunctionData({
-        abi: ContractAbi,
-        functionName: 'createGame',
-        args: [currentGameId]
-      }) as `0x${string}`,
-    }
-  ];
-  
-  // Start game call data
-  const startGameCalls = [
-    {
-      to: ContractAddress as `0x${string}`,
-      data: encodeFunctionData({
-        abi: ContractAbi,
-        functionName: 'startGame',
-        args: [currentGameId]
-      }) as `0x${string}`,
-    }
-  ];
-  
+
   // Update countdown timer
   useEffect(() => {
     const updateTimer = () => {
@@ -82,10 +34,10 @@ export default function WaitingRoom() {
       const progressPercent = Math.min(100, Math.max(0, (elapsed / totalWaitTime) * 100));
       setProgress(progressPercent);
       
-      // Show start button when timer is close to expiration
-      if (diff <= 2000 && players.length >= 2) {
-        setShowStartButton(true);
-      }
+      // // Show start button when timer is close to expiration
+      // if (diff <= 2000 && players.length >= 2) {
+      //   setShowStartButton(true);
+      // }
     };
     
     // Initial update
@@ -122,30 +74,6 @@ export default function WaitingRoom() {
         </div>
         
         <h3 className="text-xl text-cyan-100 mb-2">Game <span className="text-indigo-400">#{currentGameId}</span> Waiting Room</h3>
-        
-        {!gameInProgress && !showStartButton && players.length >= 2 && (
-          <div className="text-center mb-4">
-            <TransactionDefault 
-              calls={createGameCalls} 
-              chainId={BASE_SEPOLIA_CHAIN_ID} 
-              className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-3 px-8 rounded-full transition-all duration-200 shadow-md"
-            >
-              {/* Create Game */}
-            </TransactionDefault>
-          </div>
-        )}
-        
-        {showStartButton && !gameInProgress && (
-          <div className="text-center mb-4">
-            <TransactionDefault 
-              calls={startGameCalls} 
-              chainId={BASE_SEPOLIA_CHAIN_ID} 
-              className="bg-gradient-to-r from-green-500 to-cyan-500 hover:from-green-600 hover:to-cyan-600 text-white font-bold py-3 px-8 rounded-full transition-all duration-200 shadow-md"
-            >
-              {/* Start Game */}
-            </TransactionDefault>
-          </div>
-        )}
         
         <p className="text-xl text-center my-4 text-indigo-400 font-medium">
           {gameInProgress ? 'Waiting for next game...' : 'Waiting for game to start...'}

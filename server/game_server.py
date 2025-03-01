@@ -840,7 +840,9 @@ async def start_game():
     
     # Choose a random player to be controlled by AI
     if game_state['players']:
-        game_state['aiPlayer'] = random.choice(game_state['players'])['id']
+        aiPlayer = random.choice(game_state['players'])
+        game_state['aiPlayer'] = aiPlayer['id']
+        game_state['aiPlayerAddress'] = aiPlayer['walletAddress']
     else:
         game_state['aiPlayer'] = None
     
@@ -944,6 +946,7 @@ async def end_voting():
     game_state['gameResults'] = {
         'aiPlayerId': game_state['aiPlayer'],
         'aiPlayerName': ai_player_name,
+        'aiPlayerAddress': game_state['aiPlayerAddress'],
         'mostVotedPlayerId': most_voted_player_id,
         'mostVotedPlayerName': most_voted_player_name,
         'voteCounts': vote_counts,

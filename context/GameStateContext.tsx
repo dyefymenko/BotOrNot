@@ -32,6 +32,7 @@ interface Message {
 interface GameResults {
   aiPlayerId: string;
   aiPlayerName: string;
+  aiPlayerAddress: string;
   mostVotedPlayerId: string;
   mostVotedPlayerName: string;
   voteCounts: Record<string, number>;

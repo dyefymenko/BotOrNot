@@ -90,10 +90,6 @@ contract BotOrNotGameTest is Test {
         vm.warp(1000);
         vm.roll(100);
         
-        // Start the game
-        vm.prank(owner);
-        game.startGame(gameId);
-        
         // Verify game is in progress
         assertEq(uint(game.getGameState(gameId)), uint(1)); // IN_PROGRESS
         
@@ -157,7 +153,7 @@ contract BotOrNotGameTest is Test {
         
         // End the game
         vm.prank(owner);
-        game.endGame(gameId);
+        game.endGame(gameId, aiPlayer);
         
         // Verify game is completed
         assertEq(uint(game.getGameState(gameId)), uint(2)); // COMPLETED
@@ -187,9 +183,7 @@ contract BotOrNotGameTest is Test {
         vm.roll(blockNumber);
         
         // Start the game - this sets AI player
-        vm.prank(owner);
-        game.startGame(gameId);
-        
+
         // Start voting phase
         vm.warp(block.timestamp + 61);
         // vm.prank(owner);
@@ -234,7 +228,7 @@ contract BotOrNotGameTest is Test {
         
         // End the game
         vm.prank(owner);
-        game.endGame(gameId);
+        game.endGame(gameId, aiPlayer);
         
         // Calculate how many non-AI players we have
         uint256 nonAiPlayerCount = playerArray.length - 1; // Total players minus AI
@@ -286,9 +280,6 @@ contract BotOrNotGameTest is Test {
         vm.warp(timestamp);
         vm.roll(blockNumber);
         
-        // Start game 2
-        vm.prank(owner);
-        game.startGame(gameId2);
         
         // Start voting
         vm.warp(block.timestamp + 61);
@@ -309,7 +300,7 @@ contract BotOrNotGameTest is Test {
         
         // End the game
         vm.prank(owner);
-        game.endGame(gameId2);
+        game.endGame(gameId2, aiPlayer);
         
         // Check AI player balance before claiming
         uint256 aiBalanceBefore = usdc.balanceOf(aiPlayer);
