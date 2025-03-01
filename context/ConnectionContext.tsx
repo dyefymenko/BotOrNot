@@ -17,7 +17,13 @@ const ConnectionContext = createContext<ConnectionContextType>({
   sendToServer: () => false,
 });
 
-export const ConnectionProvider = ({ children, serverUrl = 'ws://localhost:8765' }: { children: ReactNode, serverUrl?: string }) => {
+export const ConnectionProvider = ({ 
+  children, 
+  serverUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:8765' 
+}: { 
+  children: ReactNode, 
+  serverUrl?: string 
+}) => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const { updateGameState, addToast } = useGameState();

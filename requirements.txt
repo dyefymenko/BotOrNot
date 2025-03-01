@@ -1,0 +1,7 @@
+websockets
+openai
+python-dotenv
+langgraph
+cdp-langchain
+langchain-openai
+langchain-core

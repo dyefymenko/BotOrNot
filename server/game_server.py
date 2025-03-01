@@ -986,7 +986,15 @@ async def end_voting():
 
 async def main():
     # Start WebSocket server
-    server = await websockets.serve(handle_connection, "localhost", 8765)
+    # Get port from environment variable (Render sets this automatically)
+    PORT = int(os.environ.get("PORT", 8765))
+
+    # In your main() function:
+    server = await websockets.serve(
+        handle_connection, 
+        host="0.0.0.0",  # Change from "localhost" to "0.0.0.0" to accept all connections
+        port=PORT
+    )
     
     # Start game loop
     game_loop_task = asyncio.create_task(start_game_loop())

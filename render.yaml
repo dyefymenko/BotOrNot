@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: bot-or-not-game-server
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python game_server.py
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PORT
+        value: 8765
+      - key: CDP_API_KEY_NAME
+        sync: false
+      - key: CDP_API_KEY_PRIVATE_KEY
+        sync: false
