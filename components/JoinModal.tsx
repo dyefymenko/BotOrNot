@@ -28,10 +28,7 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
       return;
     }
 
-    
-
     console.log(address);
-
     
     // Submit the prompt first
     sendToServer('submitPrompt', { prompt: promptText });
@@ -71,9 +68,30 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
 
   const BASE_SEPOLIA_CHAIN_ID = 84532;
 
-
+  // Game contract address
   const ContractAddress = '0x553384563d2D7aB0fa600FEC0f233d59A475d36a';
+  
+  // USDC token contract address on Base Sepolia
+  const USDCAddress = '0x036CbD53842c5426634e7929541eC2318f3dCF7e'; // Replace with actual USDC address
+  
+  // Entry fee amount (10 USDC with 6 decimals)
+  const ENTRY_FEE = 10 * 10^6;
 
+  // ERC20 standard approval ABI
+  const ERC20Abi = [
+    {
+      type: 'function',
+      name: 'approve',
+      inputs: [
+        { internalType: 'address', name: 'spender', type: 'address' },
+        { internalType: 'uint256', name: 'amount', type: 'uint256' }
+      ],
+      outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+      stateMutability: 'nonpayable',
+    }
+  ] as const;
+
+  // Game contract ABI
   const ContractAbi = [
     {
       type: 'constructor',
@@ -181,14 +199,14 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
     },
   ] as const;
   
-
-  const join_calls = [
+  // Create USDC approval call
+  const approveCalls = [
     {
-      to: ContractAddress as `0x${string}`,
+      to: USDCAddress as `0x${string}`,
       data: encodeFunctionData({
-        abi: ContractAbi,
-        functionName: 'joinGame',
-        args: ['1']
+        abi: ERC20Abi,
+        functionName: 'approve',
+        args: [ContractAddress as `0x${string}`, BigInt(ENTRY_FEE)]
       }) as `0x${string}`,
     }
   ];
@@ -205,6 +223,17 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
     }
   ];
 
+  // Join game call data
+  const joinGameCalls = [
+    {
+      to: ContractAddress as `0x${string}`,
+      data: encodeFunctionData({
+        abi: ContractAbi,
+        functionName: 'joinGame',
+        args: ['1']
+      }) as `0x${string}`,
+    }
+  ];
 
   
   return (
@@ -240,21 +269,41 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
             onChange={(e) => setPromptText(e.target.value)}
           />
         </div>
-        <TransactionDefault 
-        calls={createGameCalls} 
-        chainId={BASE_SEPOLIA_CHAIN_ID}
-      >
-        {/* Create Game */}
-      </TransactionDefault>
 
-        <TransactionDefault calls={join_calls} chainId={BASE_SEPOLIA_CHAIN_ID} className={"Pay 10 USDC"} />
-        
+        {/* First approve USDC spending */}
+        <div className="mb-4">
+          <TransactionDefault 
+            calls={approveCalls} 
+            chainId={BASE_SEPOLIA_CHAIN_ID}
+            className="w-full bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-all mb-3"
+          >
+            {/* Step 1: Approve USDC */}
+          </TransactionDefault>
+
+          {/* Then create game (if needed) */}
+          <TransactionDefault 
+            calls={createGameCalls} 
+            chainId={BASE_SEPOLIA_CHAIN_ID}
+            className="w-full bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-all mb-3"
+          >
+            {/* Step 2: Create Game */}
+          </TransactionDefault>
+
+          {/* Finally join the game */}
+          <TransactionDefault 
+            calls={joinGameCalls} 
+            chainId={BASE_SEPOLIA_CHAIN_ID} 
+            className="w-full bg-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-purple-700 transition-all"
+          >
+            {/* Step 3: Join Game */}
+          </TransactionDefault>
+        </div>
 
         <button 
           className="w-full bg-gradient-to-r from-purple-600 to-blue-400 text-white font-bold py-3 px-6 rounded-full hover:shadow-lg transition-all"
           onClick={handleJoin}
         >
-          JOIN GAME
+          COMPLETE REGISTRATION
         </button>
       </div>
     </div>
