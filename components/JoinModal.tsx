@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { useConnection } from '../context/ConnectionContext';
 import { useGameState } from '../context/GameStateContext';
 import { useAccount } from 'wagmi';
-
+import { Transaction, LifecycleStatus, TransactionButton, TransactionStatus, TransactionStatusLabel, TransactionStatusAction, TransactionDefault } from "@coinbase/onchainkit/transaction"
+import { useCallback } from 'react';
+import { encodeFunctionData } from 'viem';
 interface JoinModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -16,8 +18,8 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
   
   const { sendToServer } = useConnection();
   const { addToast, updateGameState } = useGameState();
-
   const { address } = useAccount();
+
   
   if (!isOpen) return null;
   
@@ -26,6 +28,10 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
       addToast('error', 'Please fill in all required fields');
       return;
     }
+
+    
+
+    console.log(address);
 
     
     // Submit the prompt first
@@ -38,9 +44,9 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
     const playerData = {
       id: playerId,
       name: username,
-      walletAddress: address,
+      walletAddress: address || '',
       initials: username.substring(0, 2).toUpperCase(),
-      type: 'human'
+      type: 'human' as 'human'
     };
     
     // Join the game
@@ -62,6 +68,133 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
       addToast('error', 'Failed to join game. Please try again.');
     }
   };
+
+
+  const BASE_SEPOLIA_CHAIN_ID = 84532;
+
+
+  const ContractAddress = '0x67157F48880D92Fdddb18451263F370564f19E1F';
+
+  const ContractAbi = [
+    {
+      type: 'constructor',
+      inputs: [
+        { internalType: 'address', name: '_usdcAddress', type: 'address' }
+      ],
+      stateMutability: 'nonpayable',
+    },
+    {
+      type: 'error',
+      name: 'OwnableInvalidOwner',
+      inputs: [
+        { internalType: 'address', name: 'owner', type: 'address' }
+      ],
+    },
+    {
+      type: 'error',
+      name: 'OwnableUnauthorizedAccount',
+      inputs: [
+        { internalType: 'address', name: 'account', type: 'address' }
+      ],
+    },
+    {
+      type: 'event',
+      name: 'GameCompleted',
+      anonymous: false,
+      inputs: [
+        { indexed: true, internalType: 'string', name: 'gameId', type: 'string' },
+        { indexed: false, internalType: 'address', name: 'aiPlayer', type: 'address' },
+        { indexed: false, internalType: 'address', name: 'mostVotedPlayer', type: 'address' },
+        { indexed: false, internalType: 'bool', name: 'correctlyIdentified', type: 'bool' }
+      ],
+    },
+    {
+      type: 'event',
+      name: 'GameCreated',
+      anonymous: false,
+      inputs: [
+        { indexed: true, internalType: 'string', name: 'gameId', type: 'string' }
+      ],
+    },
+    {
+      type: 'function',
+      name: 'ENTRY_FEE',
+      inputs: [],
+      outputs: [
+        { internalType: 'uint256', name: '', type: 'uint256' }
+      ],
+      stateMutability: 'view',
+    },
+    {
+      type: 'function',
+      name: 'adminClaimUnclaimedRewards',
+      inputs: [
+        { internalType: 'string', name: 'gameId', type: 'string' }
+      ],
+      outputs: [],
+      stateMutability: 'nonpayable',
+    },
+    {
+      type: 'function',
+      name: 'createGame',
+      inputs: [
+        { internalType: 'string', name: 'gameId', type: 'string' }
+      ],
+      outputs: [],
+      stateMutability: 'nonpayable',
+    },
+    {
+      type: 'function',
+      name: 'endGame',
+      inputs: [
+        { internalType: 'string', name: 'gameId', type: 'string' }
+      ],
+      outputs: [],
+      stateMutability: 'nonpayable',
+    },
+    {
+      type: 'function',
+      name: 'joinGame',
+      inputs: [
+        { internalType: 'string', name: 'gameId', type: 'string' }
+      ],
+      outputs: [],
+      stateMutability: 'nonpayable',
+    },
+    {
+      type: 'function',
+      name: 'vote',
+      inputs: [
+        { internalType: 'string', name: 'gameId', type: 'string' },
+        { internalType: 'address', name: 'votedFor', type: 'address' }
+      ],
+      outputs: [],
+      stateMutability: 'nonpayable',
+    },
+    {
+      type: 'function',
+      name: 'withdrawToken',
+      inputs: [
+        { internalType: 'address', name: 'tokenAddress', type: 'address' }
+      ],
+      outputs: [],
+      stateMutability: 'nonpayable',
+    },
+  ] as const;
+  
+
+  const calls = [
+    {
+      to: ContractAddress as `0x${string}`,
+      data: encodeFunctionData({
+        abi: ContractAbi,
+        functionName: 'joinGame',
+        args: ['1']
+      }) as `0x${string}`,
+    }
+  ];
+
+
   
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
@@ -96,7 +229,10 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
             onChange={(e) => setPromptText(e.target.value)}
           />
         </div>
+
+        <TransactionDefault calls={calls} chainId={BASE_SEPOLIA_CHAIN_ID} className={"Pay 10 USDC"} />
         
+
         <button 
           className="w-full bg-gradient-to-r from-purple-600 to-blue-400 text-white font-bold py-3 px-6 rounded-full hover:shadow-lg transition-all"
           onClick={handleJoin}
