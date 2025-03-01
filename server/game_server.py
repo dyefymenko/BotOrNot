@@ -660,7 +660,7 @@ async def handle_connection(websocket: websockets.WebSocketServerProtocol, path:
                         
                         # Start 30 second countdown
                         game_state['nextGameTime'] = int(time.time() * 1000) + 30000
-                        game_state['currentGameId'] = str(int(game_state['currentGameId']) + 1)
+                        game_state['currentGameId'] = str(int(game_state['currentGameId']))
                         
                         # Broadcast game creation
                         await broadcast({
