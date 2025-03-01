@@ -75,7 +75,7 @@ export default function JoinModal({ isOpen, onClose }: JoinModalProps) {
   const USDCAddress = '0x036CbD53842c5426634e7929541eC2318f3dCF7e'; // Replace with actual USDC address
   
   // Entry fee amount (10 USDC with 6 decimals)
-  const ENTRY_FEE = 10 * 10^6;
+  const ENTRY_FEE = 10 * 10**6;
 
   // ERC20 standard approval ABI
   const ERC20Abi = [
