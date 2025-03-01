@@ -58,6 +58,8 @@ export default function ResultsScreen() {
     voteCounts 
   } = gameResults;
 
+  console.log(gameResults);
+
   // End game call data
   const endGameCalls = [
     {
@@ -129,7 +131,6 @@ export default function ResultsScreen() {
           </div>
         </div>
         
-        return (
         <p>End Game</p>
         <TransactionDefault 
           calls={endGameCalls} 
@@ -148,8 +149,6 @@ export default function ResultsScreen() {
           {/* Claim Rewards */}
         </TransactionDefault>
 
-
-    );
       </div>
     </div>
   );
